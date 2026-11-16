@@ -1,0 +1,796 @@
+https://chatgpt.com/c/6af7e751-eef4-83ee-89d6-38fa08116e1b
+
+Desktop => new folder Dl_lab => terminal => py -3.11 -m notebook /  python -m notebook  / python3 -m notebook
+python3 -m pip install notebook
+cd ~/Desktop/DL_lab
+python3 -m notebook
+
+1. Check installed Python versions
+py --list
+
+
+Tumhare system mein:
+- Python 3.15
+- Python 3.12
+- Python 3.11
+2. Update pip for Python 3.11
+py -3.11 -m pip install --upgrade pip
+
+
+3. Install Jupyter and common libraries
+py -3.11 -m pip install notebook ipykernel numpy==1.23.5 scipy==1.10.1 pandas matplotlib seaborn scikit-learn pillow h5py openpyxl
+
+
+4. Install TensorFlow and Keras
+py -3.11 -m pip install tensorflow==2.15.1 keras==2.15.0
+
+
+5. Install Theano-PyMC
+py -3.11 -m pip install Theano-PyMC==1.1.2
+
+
+6. Install PyTorch
+py -3.11 -m pip install torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cpu
+
+
+7. Register Jupyter kernel
+py -3.11 -m ipykernel install --user --name python311 --display-name "Python 3.11 - All DL Labs"
+
+
+8. Verify all packages
+Theano ke BLAS compatibility workaround ke saath:
+py -3.11 -c "import numpy.distutils.__config__ as c; c.blas_opt_info={}; import tensorflow as tf; import keras; import torch; import theano; import numpy; import pandas; import sklearn; import scipy; import matplotlib; import seaborn; import PIL; print('TensorFlow:',tf.__version__); print('Keras:',keras.__version__); print('PyTorch:',torch.__version__); print('Theano:',theano.__version__); print('NumPy:',numpy.__version__); print('ALL IMPORTS SUCCESSFUL')"
+
+
+9. Launch Jupyter Notebook
+Pehle apne lab folder mein jao:
+cd "C:\Users\GayatriMahajan\Documents\Gayatri\BE SPPU\SEM 7\DL\labs"
+
+
+Then:
+py -3.11 -m notebook
+
+validation import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+import numpy.distutils.__config__ as numpy_config
+numpy_config.blas_opt_info = {}
+
+import tensorflow as tf
+import keras
+import torch
+import theano
+import theano.tensor as T
+
+import numpy as np
+import pandas as pd
+import scipy
+import sklearn
+import matplotlib.pyplot as plt
+import seaborn as sns
+from PIL import Image
+
+print("All libraries imported successfully!")
+
+# ============================================================
+# ASSIGNMENT 3
+# IMAGE CLASSIFICATION USING CONVOLUTIONAL NEURAL NETWORK
+# ============================================================
+
+# AIM:
+# To build an Image Classification model using CNN.
+# The model is developed by performing four stages:
+# 1. Loading and preprocessing image data
+# 2. Defining model architecture
+# 3. Training the model
+# 4. Estimating model performance
+
+
+# ============================================================
+# CELL 1: INSTALL REQUIRED LIBRARIES
+# ============================================================
+# PURPOSE:
+# Install TensorFlow, Keras, Matplotlib and NumPy.
+
+%pip install tensorflow keras matplotlib numpy
+
+
+# ============================================================
+# CELL 2: IMPORT REQUIRED PACKAGES
+# ============================================================
+# PURPOSE:
+# Import libraries required for CNN implementation.
+
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import (
+    Input, Dense, Conv2D, Dropout,
+    Flatten, MaxPooling2D
+)
+import matplotlib.pyplot as plt
+import numpy as np
+
+print("TensorFlow Version:", tf.__version__)
+
+
+# ============================================================
+# STAGE 1: LOADING AND PREPROCESSING IMAGE DATA
+# ============================================================
+# PURPOSE:
+# Load MNIST handwritten digit dataset.
+#
+# MNIST contains:
+# 60,000 training images
+# 10,000 testing images
+# Image size: 28 x 28 pixels
+#
+# Each image belongs to one of 10 classes (0 to 9).
+
+
+# CELL 3: LOAD MNIST DATASET
+
+mnist = tf.keras.datasets.mnist
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Display original dataset shapes
+print("Original Training Shape:", x_train.shape)
+print("Original Testing Shape:", x_test.shape)
+
+
+# CELL 4: IMAGE PREPROCESSING
+# PURPOSE:
+# Reshape images to include one channel because
+# Conv2D requires input in the format:
+# (Number of Images, Height, Width, Channels).
+#
+# MNIST images are grayscale, so channels = 1.
+
+input_shape = (28, 28, 1)
+
+# Reshape training and testing images
+x_train = x_train.reshape(x_train.shape[0], 28, 28, 1)
+x_test = x_test.reshape(x_test.shape[0], 28, 28, 1)
+
+# Convert pixel values into float32
+x_train = x_train.astype('float32')
+x_test = x_test.astype('float32')
+
+# Normalize pixel values between 0 and 1
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+
+# Display final dataset shapes
+print("\nShape of Training Data:", x_train.shape)
+print("Shape of Testing Data:", x_test.shape)
+
+# Display normalized pixel range
+print("Minimum Pixel Value:", x_train.min())
+print("Maximum Pixel Value:", x_train.max())
+
+
+# CELL 5: DISPLAY SAMPLE IMAGE
+# PURPOSE:
+# Display one sample image from MNIST dataset.
+
+plt.imshow(np.squeeze(x_train[90]), cmap='gray')
+plt.title("Sample MNIST Image")
+plt.axis('off')
+plt.show()
+
+print("Actual Image Label:", y_train[90])
+
+
+# ============================================================
+# STAGE 2: DEFINING MODEL ARCHITECTURE
+# ============================================================
+# PURPOSE:
+# Create CNN model using Sequential API.
+#
+# Conv2D: Extracts features from images.
+# MaxPooling2D: Reduces feature map dimensions.
+# Flatten: Converts feature maps into 1D array.
+# Dense: Performs classification.
+# Dropout: Helps reduce overfitting.
+# Softmax: Predicts probabilities for 10 classes.
+
+
+# CELL 6: BUILD CNN MODEL
+
+model = Sequential([
+
+    # Define input image dimensions
+    Input(shape=input_shape),
+
+    # Convolutional layer with 28 filters and ReLU activation
+    Conv2D(28, kernel_size=(3, 3), activation='relu'),
+
+    # Max pooling reduces feature map dimensions
+    MaxPooling2D(pool_size=(2, 2)),
+
+    # Convert 2D feature maps into 1D vector
+    Flatten(),
+
+    # Fully connected layer with 200 neurons
+    Dense(200, activation='relu'),
+
+    # Dropout prevents overfitting
+    Dropout(0.3),
+
+    # Output layer with 10 classes
+    Dense(10, activation='softmax')
+])
+
+# Display CNN architecture
+model.summary()
+
+
+# ============================================================
+# STAGE 3: TRAINING THE MODEL
+# ============================================================
+# PURPOSE:
+# Compile and train the CNN model.
+#
+# Adam: Optimizer used to update model weights.
+# Sparse Categorical Crossentropy: Loss function for
+# multi-class classification with integer labels.
+# Accuracy: Performance measurement.
+#
+# Validation Split: 10% of training data is used for validation.
+# Epochs: Model processes the training dataset 5 times.
+
+
+# CELL 7: COMPILE MODEL
+
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+
+# CELL 8: TRAIN MODEL
+
+history = model.fit(
+    x_train,
+    y_train,
+    validation_split=0.1,
+    epochs=5,
+    batch_size=32
+)
+
+
+# ============================================================
+# STAGE 4: ESTIMATING MODEL PERFORMANCE
+# ============================================================
+# PURPOSE:
+# Evaluate the trained CNN model using testing data.
+#
+# Test Loss measures prediction error.
+# Test Accuracy measures correctly classified images.
+
+
+# CELL 9: EVALUATE MODEL
+
+test_loss, test_acc = model.evaluate(x_test, y_test)
+
+print("\nModel Performance:")
+print("Test Loss = %.3f" % test_loss)
+print("Test Accuracy = %.3f" % test_acc)
+
+
+# CELL 10: PREDICT IMAGE CLASS
+# PURPOSE:
+# Predict the digit represented by a test image.
+#
+# model.predict() returns probabilities for 10 classes.
+# np.argmax() selects the class with the highest probability.
+
+# Select one test image
+image = x_test[90]
+
+# Display selected image
+plt.imshow(np.squeeze(image), cmap='gray')
+plt.title("Test Image")
+plt.axis('off')
+plt.show()
+
+# Reshape image to include batch dimension
+image = image.reshape(1, 28, 28, 1)
+
+# Predict image class
+predict_model = model.predict(image, verbose=0)
+
+# Get predicted class
+predicted_class = np.argmax(predict_model)
+
+# Display actual and predicted classes
+print("Predicted Class:", predicted_class)
+print("Actual Class:", y_test[90])
+
+
+# ============================================================
+# CELL 11: PLOT TRAINING AND VALIDATION ACCURACY
+# ============================================================
+# PURPOSE:
+# Plot accuracy during training and validation.
+# This graph helps analyze model classification performance.
+
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+
+plt.title('Model Accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+
+plt.legend(['Training', 'Validation'], loc='lower right')
+
+plt.show()
+
+
+# ============================================================
+# CELL 12: PLOT TRAINING AND VALIDATION LOSS
+# ============================================================
+# PURPOSE:
+# Plot training and validation loss.
+# Lower loss generally indicates better model performance.
+
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+
+plt.title('Model Loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+
+plt.legend(['Training', 'Validation'], loc='upper right')
+
+plt.show()
+
+
+# ============================================================
+# CONCLUSION
+# ============================================================
+# Thus, we successfully developed an Image Classification
+# model using Convolutional Neural Network (CNN) and Keras.
+# The MNIST dataset was loaded and preprocessed.
+# The CNN model was trained and evaluated using testing data.
+# Training and validation accuracy and loss graphs were
+# plotted to estimate the model's performance.
+
+
+# ============================================================
+# ASSIGNMENT 3
+# IMAGE CLASSIFICATION USING CONVOLUTIONAL NEURAL NETWORK
+# ============================================================
+
+# AIM:
+# To build an Image Classification model using CNN.
+# The model is developed by performing four stages:
+# 1. Loading and preprocessing image data
+# 2. Defining model architecture
+# 3. Training the model
+# 4. Estimating model performance
+
+
+# ============================================================
+# CELL 1: INSTALL REQUIRED LIBRARIES
+# ============================================================
+
+# PURPOSE:
+# Install TensorFlow, Keras, Matplotlib and NumPy.
+# TensorFlow and Keras are used to build and train CNN.
+# Matplotlib is used to display images and graphs.
+# NumPy is used for numerical and array operations.
+
+# Install packages only if they are not already installed
+# %pip installs packages into the current Jupyter environment
+
+# %pip install tensorflow keras matplotlib numpy
+
+
+# ============================================================
+# CELL 2: IMPORT REQUIRED PACKAGES
+# ============================================================
+
+# PURPOSE:
+# Import libraries required for CNN implementation.
+
+# Import TensorFlow deep learning framework
+import tensorflow as tf
+
+# Import Keras API from TensorFlow
+from tensorflow import keras
+
+# Import Sequential model to arrange layers one after another
+from tensorflow.keras.models import Sequential
+
+# Import required CNN layers
+from tensorflow.keras.layers import (
+    Input,          # Defines the input dimensions of an image
+    Dense,          # Creates fully connected neural network layer
+    Conv2D,         # Performs 2D convolution to extract image features
+    Dropout,        # Helps prevent overfitting
+    Flatten,        # Converts 2D feature maps into 1D array
+    MaxPooling2D    # Reduces feature map dimensions
+)
+
+# Import Matplotlib for displaying images and graphs
+import matplotlib.pyplot as plt
+
+# Import NumPy for numerical and array operations
+import numpy as np
+
+# Display installed TensorFlow version
+print("TensorFlow Version:", tf.__version__)
+
+
+# ============================================================
+# STAGE 1: LOADING AND PREPROCESSING IMAGE DATA
+# ============================================================
+
+# PURPOSE:
+# Load MNIST handwritten digit dataset.
+#
+# MNIST contains:
+# 60,000 training images
+# 10,000 testing images
+# Image size: 28 x 28 pixels
+#
+# Each image belongs to one of 10 classes (0 to 9).
+
+
+# ============================================================
+# CELL 3: LOAD MNIST DATASET
+# ============================================================
+
+# Access the MNIST dataset available in TensorFlow
+mnist = tf.keras.datasets.mnist
+
+# Load the dataset and divide it into training and testing data
+# x_train = training images
+# y_train = training labels
+# x_test = testing images
+# y_test = testing labels
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Display original shape of training images
+print("Original Training Shape:", x_train.shape)
+
+# Display original shape of testing images
+print("Original Testing Shape:", x_test.shape)
+
+
+# ============================================================
+# CELL 4: IMAGE PREPROCESSING
+# ============================================================
+
+# PURPOSE:
+# Reshape images to include one channel because
+# Conv2D requires input in the format:
+# (Number of Images, Height, Width, Channels).
+#
+# MNIST images are grayscale, so channels = 1.
+
+# Define input image dimensions and number of channels
+input_shape = (28, 28, 1)
+
+# Reshape training images to include one channel
+# x_train.shape[0] represents the total number of training images
+x_train = x_train.reshape(x_train.shape[0], 28, 28, 1)
+
+# Reshape testing images to include one channel
+x_test = x_test.reshape(x_test.shape[0], 28, 28, 1)
+
+# Convert training pixel values into float32 format
+x_train = x_train.astype('float32')
+
+# Convert testing pixel values into float32 format
+x_test = x_test.astype('float32')
+
+# Normalize training pixel values between 0 and 1
+# Original pixel values range from 0 to 255
+x_train = x_train / 255.0
+
+# Normalize testing pixel values between 0 and 1
+x_test = x_test / 255.0
+
+# Display final shape of training data
+print("\nShape of Training Data:", x_train.shape)
+
+# Display final shape of testing data
+print("Shape of Testing Data:", x_test.shape)
+
+# Display minimum normalized pixel value
+print("Minimum Pixel Value:", x_train.min())
+
+# Display maximum normalized pixel value
+print("Maximum Pixel Value:", x_train.max())
+
+
+# ============================================================
+# CELL 5: DISPLAY SAMPLE IMAGE
+# ============================================================
+
+# PURPOSE:
+# Display one sample image from MNIST dataset.
+
+# Select the 91st training image using index 90
+# np.squeeze removes the extra channel dimension
+plt.imshow(np.squeeze(x_train[90]), cmap='gray')
+
+# Set the title of the displayed image
+plt.title("Sample MNIST Image")
+
+# Hide x-axis and y-axis values
+plt.axis('off')
+
+# Display the image
+plt.show()
+
+# Display the actual digit label of the selected image
+print("Actual Image Label:", y_train[90])
+
+
+# ============================================================
+# STAGE 2: DEFINING MODEL ARCHITECTURE
+# ============================================================
+
+# PURPOSE:
+# Create CNN model using Sequential API.
+#
+# Conv2D: Extracts features from images.
+# MaxPooling2D: Reduces feature map dimensions.
+# Flatten: Converts feature maps into 1D array.
+# Dense: Performs classification.
+# Dropout: Helps reduce overfitting.
+# Softmax: Predicts probabilities for 10 classes.
+
+
+# ============================================================
+# CELL 6: BUILD CNN MODEL
+# ============================================================
+
+# Create a Sequential CNN model
+# Sequential means layers are arranged one after another
+model = Sequential([
+
+    # Define input image dimensions as 28 x 28 with 1 channel
+    Input(shape=input_shape),
+
+    # Convolutional layer with 28 filters
+    # Each filter extracts image features
+    # Kernel size 3x3 defines the filter dimensions
+    # ReLU activation introduces non-linearity
+    Conv2D(28, kernel_size=(3, 3), activation='relu'),
+
+    # Max pooling selects maximum values from 2x2 regions
+    # This reduces feature map dimensions
+    MaxPooling2D(pool_size=(2, 2)),
+
+    # Convert 2D feature maps into a 1D vector
+    Flatten(),
+
+    # Fully connected layer containing 200 neurons
+    # ReLU activation is used in the hidden layer
+    Dense(200, activation='relu'),
+
+    # Dropout randomly disables 30% of neurons during training
+    # This helps prevent overfitting
+    Dropout(0.3),
+
+    # Output layer containing 10 neurons for digits 0 to 9
+    # Softmax produces probability values for each class
+    Dense(10, activation='softmax')
+])
+
+# Display CNN architecture and trainable parameters
+model.summary()
+
+
+# ============================================================
+# STAGE 3: TRAINING THE MODEL
+# ============================================================
+
+# PURPOSE:
+# Compile and train the CNN model.
+#
+# Adam: Optimizer used to update model weights.
+# Sparse Categorical Crossentropy: Loss function for
+# multi-class classification with integer labels.
+# Accuracy: Performance measurement.
+#
+# Validation Split: 10% of training data is used for validation.
+# Epochs: Model processes the training dataset 5 times.
+
+
+# ============================================================
+# CELL 7: COMPILE MODEL
+# ============================================================
+
+# Compile the CNN model by specifying optimizer, loss and metrics
+model.compile(
+
+    # Adam optimizer updates model weights during training
+    optimizer='adam',
+
+    # Calculate classification error for multiple classes
+    # Suitable for integer labels from 0 to 9
+    loss='sparse_categorical_crossentropy',
+
+    # Measure percentage of correctly classified images
+    metrics=['accuracy']
+)
+
+
+# ============================================================
+# CELL 8: TRAIN MODEL
+# ============================================================
+
+# Train the CNN model using training images and labels
+# Store training and validation performance in history
+history = model.fit(
+
+    # Provide training images as input
+    x_train,
+
+    # Provide actual digit labels
+    y_train,
+
+    # Reserve 10% of training data for validation
+    validation_split=0.1,
+
+    # Train the model for 5 complete epochs
+    epochs=5,
+
+    # Process 32 images in each batch
+    batch_size=32
+)
+
+
+# ============================================================
+# STAGE 4: ESTIMATING MODEL PERFORMANCE
+# ============================================================
+
+# PURPOSE:
+# Evaluate the trained CNN model using testing data.
+#
+# Test Loss measures prediction error.
+# Test Accuracy measures correctly classified images.
+
+
+# ============================================================
+# CELL 9: EVALUATE MODEL
+# ============================================================
+
+# Evaluate the trained model using testing images and labels
+# Store the calculated test loss and accuracy
+test_loss, test_acc = model.evaluate(x_test, y_test)
+
+# Display model performance heading
+print("\nModel Performance:")
+
+# Display test loss up to 3 decimal places
+print("Test Loss = %.3f" % test_loss)
+
+# Display test accuracy up to 3 decimal places
+print("Test Accuracy = %.3f" % test_acc)
+
+
+# ============================================================
+# CELL 10: PREDICT IMAGE CLASS
+# ============================================================
+
+# PURPOSE:
+# Predict the digit represented by a test image.
+#
+# model.predict() returns probabilities for 10 classes.
+# np.argmax() selects the class with the highest probability.
+
+# Select one test image using index 90
+image = x_test[90]
+
+# Display selected testing image in grayscale
+# np.squeeze removes the extra channel dimension for plotting
+plt.imshow(np.squeeze(image), cmap='gray')
+
+# Set image title
+plt.title("Test Image")
+
+# Hide x-axis and y-axis values
+plt.axis('off')
+
+# Display the selected image
+plt.show()
+
+# Reshape image to include batch dimension
+# CNN expects input in the format (batch, height, width, channels)
+image = image.reshape(1, 28, 28, 1)
+
+# Generate prediction probabilities for the selected image
+predict_model = model.predict(image, verbose=0)
+
+# Select the class having the highest probability
+predicted_class = np.argmax(predict_model)
+
+# Display the predicted digit class
+print("Predicted Class:", predicted_class)
+
+# Display the actual digit class from the dataset
+print("Actual Class:", y_test[90])
+
+
+# ============================================================
+# CELL 11: PLOT TRAINING AND VALIDATION ACCURACY
+# ============================================================
+
+# PURPOSE:
+# Plot accuracy during training and validation.
+# This graph helps analyze model classification performance.
+
+# Plot accuracy achieved on training data for each epoch
+plt.plot(history.history['accuracy'])
+
+# Plot accuracy achieved on validation data for each epoch
+plt.plot(history.history['val_accuracy'])
+
+# Set graph title
+plt.title('Model Accuracy')
+
+# Set y-axis label
+plt.ylabel('Accuracy')
+
+# Set x-axis label
+plt.xlabel('Epoch')
+
+# Add legend to identify training and validation curves
+plt.legend(['Training', 'Validation'], loc='lower right')
+
+# Display accuracy graph
+plt.show()
+
+
+# ============================================================
+# CELL 12: PLOT TRAINING AND VALIDATION LOSS
+# ============================================================
+
+# PURPOSE:
+# Plot training and validation loss.
+# Lower loss generally indicates better model performance.
+
+# Plot loss on training data for each epoch
+plt.plot(history.history['loss'])
+
+# Plot loss on validation data for each epoch
+plt.plot(history.history['val_loss'])
+
+# Set graph title
+plt.title('Model Loss')
+
+# Set y-axis label
+plt.ylabel('Loss')
+
+# Set x-axis label
+plt.xlabel('Epoch')
+
+# Add legend to identify training and validation loss curves
+plt.legend(['Training', 'Validation'], loc='upper right')
+
+# Display loss graph
+plt.show()
+
+
+# ============================================================
+# CONCLUSION
+# ============================================================
+
+# Thus, we successfully developed an Image Classification
+# model using Convolutional Neural Network (CNN) and Keras.
+
+# The MNIST dataset was loaded and preprocessed.
+
+# The CNN model was trained and evaluated using testing data.
+
+# Training and validation accuracy and loss graphs were
+# plotted to estimate the model's performance.
+

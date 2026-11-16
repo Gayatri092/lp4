@@ -1,0 +1,1409 @@
+http://storage.googleapis.com/download.tensorflow.org/data/ecg.csv
+
+https://chatgpt.com/c/6af7e751-eef4-83ee-89d6-38fa08116e1b
+
+Desktop => new folder Dl_lab => terminal => py -3.11 -m notebook /  python -m notebook  / python3 -m notebook
+python3 -m pip install notebook
+cd ~/Desktop/DL_lab
+python3 -m notebook
+
+1. Check installed Python versions
+py --list
+
+
+Tumhare system mein:
+- Python 3.15
+- Python 3.12
+- Python 3.11
+2. Update pip for Python 3.11
+py -3.11 -m pip install --upgrade pip
+
+
+3. Install Jupyter and common libraries
+py -3.11 -m pip install notebook ipykernel numpy==1.23.5 scipy==1.10.1 pandas matplotlib seaborn scikit-learn pillow h5py openpyxl
+
+
+4. Install TensorFlow and Keras
+py -3.11 -m pip install tensorflow==2.15.1 keras==2.15.0
+
+
+5. Install Theano-PyMC
+py -3.11 -m pip install Theano-PyMC==1.1.2
+
+
+6. Install PyTorch
+py -3.11 -m pip install torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cpu
+
+
+7. Register Jupyter kernel
+py -3.11 -m ipykernel install --user --name python311 --display-name "Python 3.11 - All DL Labs"
+
+
+8. Verify all packages
+Theano ke BLAS compatibility workaround ke saath:
+py -3.11 -c "import numpy.distutils.__config__ as c; c.blas_opt_info={}; import tensorflow as tf; import keras; import torch; import theano; import numpy; import pandas; import sklearn; import scipy; import matplotlib; import seaborn; import PIL; print('TensorFlow:',tf.__version__); print('Keras:',keras.__version__); print('PyTorch:',torch.__version__); print('Theano:',theano.__version__); print('NumPy:',numpy.__version__); print('ALL IMPORTS SUCCESSFUL')"
+
+
+9. Launch Jupyter Notebook
+Pehle apne lab folder mein jao:
+cd "C:\Users\GayatriMahajan\Documents\Gayatri\BE SPPU\SEM 7\DL\labs"
+
+
+Then:
+py -3.11 -m notebook
+
+validation import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+import numpy.distutils.__config__ as numpy_config
+numpy_config.blas_opt_info = {}
+
+import tensorflow as tf
+import keras
+import torch
+import theano
+import theano.tensor as T
+
+import numpy as np
+import pandas as pd
+import scipy
+import sklearn
+import matplotlib.pyplot as plt
+import seaborn as sns
+from PIL import Image
+
+print("All libraries imported successfully!")
+
+# ============================================================
+# ASSIGNMENT 4
+# ANOMALY DETECTION USING AUTOENCODER
+# ============================================================
+
+# AIM:
+# To implement anomaly detection using an Autoencoder.
+# The encoder converts input data into a latent representation,
+# and the decoder reconstructs the original input.
+# Reconstruction error is used to detect anomalies.
+
+
+# ============================================================
+# CELL 1: INSTALL REQUIRED LIBRARIES
+# ============================================================
+# PURPOSE:
+# Install libraries required for data preprocessing,
+# model building, evaluation and visualization.
+
+%pip install numpy pandas tensorflow scikit-learn matplotlib seaborn
+
+
+# ============================================================
+# CELL 2: IMPORT REQUIRED LIBRARIES
+# ============================================================
+# PURPOSE:
+# Import necessary packages.
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import confusion_matrix, classification_report
+
+from tensorflow.keras import layers, models
+
+print("TensorFlow Version:", tf.__version__)
+
+
+# ============================================================
+# CELL 3: LOAD ECG DATASET
+# ============================================================
+# PURPOSE:
+# Load ECG dataset using Pandas.
+#
+# Place ecg.xls in the same folder as your Jupyter Notebook.
+# Although the extension is .xls, the uploaded file contains
+# comma-separated values, so we use read_csv().
+#
+# Dataset contains:
+# 4998 records
+# 140 ECG features
+# 1 binary label column
+
+ecg_dataset = pd.read_csv("ecg.csv", header=None)
+
+# Display first five records
+print("First Five Records:")
+print(ecg_dataset.head())
+
+# Display dataset dimensions
+print("\nDataset Shape:", ecg_dataset.shape)
+
+# Check missing values
+print("\nMissing Values:", ecg_dataset.isnull().sum().sum())
+
+# Display binary label distribution
+print("\nLabel Distribution:")
+print(ecg_dataset.iloc[:, -1].value_counts())
+
+
+# ============================================================
+# CELL 4: SEPARATE FEATURES AND LABELS
+# ============================================================
+# PURPOSE:
+# Separate ECG features and actual class labels.
+#
+# First 140 columns contain ECG signal features.
+# Last column contains binary class labels.
+#
+# IMPORTANT:
+# Verify that label 0 means normal and label 1 means anomaly
+# from the dataset documentation before running this code.
+
+X = ecg_dataset.iloc[:, :-1].values
+labels = ecg_dataset.iloc[:, -1].values
+
+# Set normal class label according to dataset documentation
+NORMAL_LABEL = 1
+
+print("\nECG Features Shape:", X.shape)
+print("Labels Shape:", labels.shape)
+
+
+# ============================================================
+# CELL 5: SPLIT TRAINING AND TESTING DATA
+# ============================================================
+# PURPOSE:
+# Divide dataset into training and testing sets.
+#
+# 80% data is used for training.
+# 20% data is used for testing.
+#
+# Stratify maintains the class distribution in both sets.
+
+X_train_all, X_test_raw, y_train_labels, y_test_labels = \
+    train_test_split(
+        X,
+        labels,
+        test_size=0.2,
+        random_state=42,
+        stratify=labels
+    )
+
+# Select only normal ECG samples for Autoencoder training
+X_train_normal_raw = X_train_all[
+    y_train_labels == NORMAL_LABEL
+]
+
+# Divide normal training data into training and validation sets
+X_train_normal_raw, X_val_normal_raw = train_test_split(
+    X_train_normal_raw,
+    test_size=0.1,
+    random_state=42
+)
+
+print("\nNormal Training Shape:", X_train_normal_raw.shape)
+print("Normal Validation Shape:", X_val_normal_raw.shape)
+print("Testing Shape:", X_test_raw.shape)
+
+
+# ============================================================
+# CELL 6: DATA PREPROCESSING
+# ============================================================
+# PURPOSE:
+# Standardize ECG feature values using StandardScaler.
+#
+# StandardScaler transforms values to approximately
+# zero mean and unit standard deviation.
+#
+# Fit the scaler only on normal training data to prevent
+# information leakage.
+
+scaler = StandardScaler()
+
+X_train_normal = scaler.fit_transform(X_train_normal_raw)
+
+X_val_normal = scaler.transform(X_val_normal_raw)
+
+X_test = scaler.transform(X_test_raw)
+
+# Display preprocessed data shapes
+print("\nPreprocessed Training Shape:", X_train_normal.shape)
+print("Preprocessed Validation Shape:", X_val_normal.shape)
+print("Preprocessed Testing Shape:", X_test.shape)
+
+
+# ============================================================
+# CELL 7: BUILD ENCODER
+# ============================================================
+# PURPOSE:
+# Encoder compresses input data into a smaller latent
+# representation.
+#
+# Architecture:
+# Input -> 32 Neurons -> 16 Neurons -> 8 Neurons
+
+input_dim = X_train_normal.shape[1]
+
+encoder = models.Sequential([
+    
+    # Input layer accepts 140 ECG features
+    layers.Input(shape=(input_dim,)),
+    
+    # First encoding layer
+    layers.Dense(32, activation='relu'),
+    
+    # Second encoding layer
+    layers.Dense(16, activation='relu'),
+    
+    # Latent representation
+    layers.Dense(8, activation='relu')
+    
+])
+
+print("\nEncoder Summary:")
+encoder.summary()
+
+
+# ============================================================
+# CELL 8: BUILD DECODER
+# ============================================================
+# PURPOSE:
+# Decoder reconstructs the original input from
+# the compressed latent representation.
+#
+# Architecture:
+# Input -> 16 Neurons -> 32 Neurons -> 140 Neurons
+
+decoder = models.Sequential([
+    
+    # Input is the 8-dimensional latent representation
+    layers.Input(shape=(8,)),
+    
+    # First decoding layer
+    layers.Dense(16, activation='relu'),
+    
+    # Second decoding layer
+    layers.Dense(32, activation='relu'),
+    
+    # Reconstruct original 140 features
+    # Linear activation allows continuous output values
+    layers.Dense(input_dim, activation='linear')
+    
+])
+
+print("\nDecoder Summary:")
+decoder.summary()
+
+
+# ============================================================
+# CELL 9: BUILD COMPLETE AUTOENCODER
+# ============================================================
+# PURPOSE:
+# Combine encoder and decoder into one Autoencoder.
+#
+# Input ECG -> Encoder -> Latent Representation
+# -> Decoder -> Reconstructed ECG
+
+# Combine encoder and decoder
+autoencoder = models.Sequential([
+    encoder,
+    decoder
+])
+
+# Explicitly build the complete model
+autoencoder.build(input_shape=(None, input_dim))
+
+# Display complete Autoencoder architecture
+print("\nComplete Autoencoder Summary:")
+autoencoder.summary()
+
+
+# ============================================================
+# CELL 10: COMPILE THE AUTOENCODER
+# ============================================================
+# PURPOSE:
+# Configure optimizer, loss function and evaluation metric.
+#
+# Adam: Optimizer used to update model weights.
+# MSE: Measures reconstruction error.
+# MAE: Additional reconstruction evaluation metric.
+
+autoencoder.compile(
+    optimizer='adam',
+    loss='mean_squared_error',
+    metrics=['mae']
+)
+
+
+# ============================================================
+# CELL 11: TRAIN THE AUTOENCODER
+# ============================================================
+# PURPOSE:
+# Train the Autoencoder using normal ECG records.
+#
+# Input and output are the same because an Autoencoder
+# learns to reconstruct its input.
+#
+# Validation data is also normal ECG data.
+
+history = autoencoder.fit(
+    X_train_normal,
+    X_train_normal,
+    validation_data=(X_val_normal, X_val_normal),
+    epochs=20,
+    batch_size=32,
+    shuffle=True
+)
+
+
+# ============================================================
+# CELL 12: CALCULATE RECONSTRUCTION ERROR
+# ============================================================
+# PURPOSE:
+# Reconstruct testing ECG records using the trained model.
+#
+# MSE is calculated between original and reconstructed data.
+#
+# Higher reconstruction error indicates a possible anomaly.
+
+y_pred = autoencoder.predict(X_test)
+
+# Calculate Mean Squared Error for each testing record
+mse = np.mean(np.power(X_test - y_pred, 2), axis=1)
+
+print("\nReconstruction Errors:")
+print(mse[:10])
+
+
+# ============================================================
+# CELL 13: DEFINE ANOMALY THRESHOLD
+# ============================================================
+# PURPOSE:
+# Calculate threshold using normal validation data.
+#
+# 95th percentile is selected as the threshold.
+# Records with reconstruction error above this threshold
+# are classified as anomalies.
+
+val_pred = autoencoder.predict(X_val_normal)
+
+val_mse = np.mean(
+    np.power(X_val_normal - val_pred, 2),
+    axis=1
+)
+
+threshold = np.percentile(val_mse, 95)
+
+print("\nAnomaly Threshold:", threshold)
+
+
+# ============================================================
+# CELL 14: DETECT ANOMALIES
+# ============================================================
+# PURPOSE:
+# Compare testing reconstruction errors with threshold.
+#
+# If MSE > Threshold: Anomaly
+# If MSE <= Threshold: Normal
+
+anomalies = mse > threshold
+
+# Count detected anomalies
+num_anomalies = np.sum(anomalies)
+
+print("\nNumber of Anomalies:", num_anomalies)
+
+print("Number of Normal Records:", np.sum(~anomalies))
+
+
+# ============================================================
+# CELL 15: PLOT ANOMALY DETECTION RESULTS
+# ============================================================
+# PURPOSE:
+# Visualize reconstruction errors and anomaly threshold.
+#
+# Points above the red threshold line indicate anomalies.
+
+plt.figure(figsize=(12, 6))
+
+plt.plot(
+    mse,
+    marker='o',
+    linestyle='',
+    markersize=3,
+    label='Reconstruction Error'
+)
+
+plt.axhline(
+    threshold,
+    color='red',
+    linestyle='--',
+    label='Anomaly Threshold'
+)
+
+plt.xlabel('Sample Index')
+plt.ylabel('Mean Squared Error')
+plt.title('Anomaly Detection Results')
+
+plt.legend()
+plt.show()
+
+
+# ============================================================
+# CELL 16: DISPLAY NORMAL ECG RECONSTRUCTION
+# ============================================================
+# PURPOSE:
+# Compare original and reconstructed normal ECG records.
+
+normal_indices = np.where(y_test_labels == NORMAL_LABEL)[0]
+
+if len(normal_indices) > 0:
+
+    normal_index = normal_indices[0]
+
+    plt.figure(figsize=(12, 6))
+
+    plt.plot(
+        X_test[normal_index],
+        label='Original ECG'
+    )
+
+    plt.plot(
+        y_pred[normal_index],
+        label='Reconstructed ECG'
+    )
+
+    plt.xlabel('Feature Index')
+    plt.ylabel('Amplitude')
+    plt.title('Normal ECG Reconstruction')
+
+    plt.legend()
+    plt.show()
+
+
+# ============================================================
+# CELL 17: DISPLAY ANOMALOUS ECG RECONSTRUCTION
+# ============================================================
+# PURPOSE:
+# Display original and reconstructed anomalous ECG records.
+#
+# Anomalous records generally have larger reconstruction
+# errors than normal records.
+
+anomalies_index = np.where(anomalies)[0]
+
+if len(anomalies_index) > 0:
+
+    anomaly_index = anomalies_index[0]
+
+    plt.figure(figsize=(12, 6))
+
+    plt.plot(
+        X_test[anomaly_index],
+        label='Original ECG'
+    )
+
+    plt.plot(
+        y_pred[anomaly_index],
+        label='Reconstructed ECG'
+    )
+
+    plt.xlabel('Feature Index')
+    plt.ylabel('Amplitude')
+    plt.title('Anomalous ECG Reconstruction')
+
+    plt.legend()
+    plt.show()
+
+else:
+    print("No anomalies detected in test data.")
+
+
+# ============================================================
+# CELL 18: EVALUATE MODEL PERFORMANCE
+# ============================================================
+# PURPOSE:
+# Compare actual dataset labels with predicted anomaly labels.
+#
+# Actual anomaly = 1 if label differs from NORMAL_LABEL.
+# Predicted anomaly = 1 if reconstruction error exceeds threshold.
+#
+# This gives a meaningful confusion matrix and classification
+# report, unlike comparing predictions with themselves.
+
+y_true = (y_test_labels != NORMAL_LABEL).astype(int)
+
+y_predicted = anomalies.astype(int)
+
+# Calculate confusion matrix
+cm = confusion_matrix(
+    y_true,
+    y_predicted,
+    labels=[0, 1]
+)
+
+print("\nConfusion Matrix:")
+print(cm)
+
+# Display precision, recall and F1-score
+print("\nClassification Report:")
+
+print(
+    classification_report(
+        y_true,
+        y_predicted,
+        labels=[0, 1],
+        target_names=['Normal', 'Anomaly'],
+        zero_division=0
+    )
+)
+
+
+# ============================================================
+# CELL 19: VISUALIZE CONFUSION MATRIX
+# ============================================================
+# PURPOSE:
+# Display confusion matrix as a heatmap.
+#
+# It shows correct and incorrect normal/anomaly predictions.
+
+plt.figure(figsize=(6, 5))
+
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt='d',
+    cmap='Blues',
+    xticklabels=['Normal', 'Anomaly'],
+    yticklabels=['Normal', 'Anomaly']
+)
+
+plt.xlabel('Predicted Label')
+plt.ylabel('Actual Label')
+plt.title('Confusion Matrix')
+
+plt.show()
+
+
+# ============================================================
+# CELL 20: PLOT TRAINING AND VALIDATION LOSS
+# ============================================================
+# PURPOSE:
+# Visualize the Autoencoder's training and validation loss.
+
+plt.figure(figsize=(8, 5))
+
+plt.plot(
+    history.history['loss'],
+    label='Training Loss'
+)
+
+plt.plot(
+    history.history['val_loss'],
+    label='Validation Loss'
+)
+
+plt.xlabel('Epoch')
+plt.ylabel('Mean Squared Error')
+plt.title('Autoencoder Training and Validation Loss')
+
+plt.legend()
+plt.show()
+
+
+# ============================================================
+# CONCLUSION
+# ============================================================
+# Thus, we successfully implemented anomaly detection
+# using an Autoencoder on the ECG dataset.
+#
+# The encoder compressed the ECG data into a latent
+# representation, and the decoder reconstructed the input.
+#
+# Reconstruction error and a threshold were used to
+# identify anomalous records.
+#
+# Model performance was evaluated using a confusion matrix,
+# precision, recall and F1-score.
+
+# ============================================================
+# ASSIGNMENT 4
+# ANOMALY DETECTION USING AUTOENCODER
+# ============================================================
+
+# AIM:
+# To implement anomaly detection using an Autoencoder.
+# The encoder converts input data into a latent representation,
+# and the decoder reconstructs the original input.
+# Reconstruction error is used to detect anomalies.
+
+
+# ============================================================
+# CELL 1: INSTALL REQUIRED LIBRARIES
+# ============================================================
+
+# PURPOSE:
+# Install libraries required for data preprocessing,
+# model building, evaluation and visualization.
+
+# Install packages only if they are not already installed
+# %pip installs packages into the current Jupyter environment
+
+# %pip install numpy pandas tensorflow scikit-learn matplotlib seaborn
+
+
+# ============================================================
+# CELL 2: IMPORT REQUIRED LIBRARIES
+# ============================================================
+
+# PURPOSE:
+# Import necessary packages for Autoencoder implementation.
+
+# Import NumPy for numerical operations and arrays
+import numpy as np
+
+# Import Pandas for loading and handling the ECG dataset
+import pandas as pd
+
+# Import TensorFlow deep learning framework
+import tensorflow as tf
+
+# Import Matplotlib for displaying graphs
+import matplotlib.pyplot as plt
+
+# Import Seaborn for confusion matrix visualization
+import seaborn as sns
+
+# Import train_test_split to divide data into training and testing sets
+from sklearn.model_selection import train_test_split
+
+# Import StandardScaler to standardize feature values
+from sklearn.preprocessing import StandardScaler
+
+# Import confusion_matrix and classification_report for evaluation
+from sklearn.metrics import confusion_matrix, classification_report
+
+# Import layers and models for building the Autoencoder
+from tensorflow.keras import layers, models
+
+# Display installed TensorFlow version
+print("TensorFlow Version:", tf.__version__)
+
+
+# ============================================================
+# CELL 3: LOAD ECG DATASET
+# ============================================================
+
+# PURPOSE:
+# Load ECG dataset using Pandas.
+#
+# Place ecg.csv in the same folder as your Jupyter Notebook.
+#
+# Dataset contains:
+# 4998 records
+# 140 ECG features
+# 1 binary label column
+
+# Read ECG dataset from CSV file
+# header=None means the dataset does not contain column headings
+ecg_dataset = pd.read_csv("ecg.csv", header=None)
+
+# Display the first five records of the dataset
+print("First Five Records:")
+print(ecg_dataset.head())
+
+# Display total number of rows and columns
+print("\nDataset Shape:", ecg_dataset.shape)
+
+# Calculate and display total number of missing values
+print("\nMissing Values:", ecg_dataset.isnull().sum().sum())
+
+# Display the number of records belonging to each class
+# The last column contains the binary class labels
+print("\nLabel Distribution:")
+print(ecg_dataset.iloc[:, -1].value_counts())
+
+
+# ============================================================
+# CELL 4: SEPARATE FEATURES AND LABELS
+# ============================================================
+
+# PURPOSE:
+# Separate ECG features and actual class labels.
+#
+# First 140 columns contain ECG signal features.
+# Last column contains binary class labels.
+#
+# Label 1 = Normal
+# Label 0 = Anomaly
+# This mapping should match the dataset documentation.
+
+# Select all columns except the last column as input features
+# .values converts the DataFrame into a NumPy array
+X = ecg_dataset.iloc[:, :-1].values
+
+# Select the last column as actual class labels
+labels = ecg_dataset.iloc[:, -1].values
+
+# Define the label representing normal ECG records
+NORMAL_LABEL = 1
+
+# Display the shape of ECG features
+print("\nECG Features Shape:", X.shape)
+
+# Display the shape of class labels
+print("Labels Shape:", labels.shape)
+
+
+# ============================================================
+# CELL 5: SPLIT TRAINING AND TESTING DATA
+# ============================================================
+
+# PURPOSE:
+# Divide dataset into training and testing sets.
+#
+# 80% data is used for training.
+# 20% data is used for testing.
+#
+# Stratify maintains the class distribution in both sets.
+
+# Split ECG features and labels into training and testing sets
+X_train_all, X_test_raw, y_train_labels, y_test_labels = \
+    train_test_split(
+
+        # Provide complete ECG feature data
+        X,
+
+        # Provide corresponding class labels
+        labels,
+
+        # Reserve 20% of the data for testing
+        test_size=0.2,
+
+        # Set random state for reproducible splitting
+        random_state=42,
+
+        # Maintain class distribution in training and testing sets
+        stratify=labels
+    )
+
+# Select only normal ECG records from training data
+# Autoencoder learns the pattern of normal records
+X_train_normal_raw = X_train_all[
+    y_train_labels == NORMAL_LABEL
+]
+
+# Divide normal training data into training and validation sets
+X_train_normal_raw, X_val_normal_raw = train_test_split(
+
+    # Provide only normal ECG training records
+    X_train_normal_raw,
+
+    # Reserve 10% of normal records for validation
+    test_size=0.1,
+
+    # Maintain reproducibility
+    random_state=42
+)
+
+# Display number of normal training records
+print("\nNormal Training Shape:", X_train_normal_raw.shape)
+
+# Display number of normal validation records
+print("Normal Validation Shape:", X_val_normal_raw.shape)
+
+# Display testing dataset dimensions
+print("Testing Shape:", X_test_raw.shape)
+
+
+# ============================================================
+# CELL 6: DATA PREPROCESSING
+# ============================================================
+
+# PURPOSE:
+# Standardize ECG feature values using StandardScaler.
+#
+# StandardScaler transforms values to approximately
+# zero mean and unit standard deviation.
+#
+# Fit the scaler only on normal training data to prevent
+# information leakage.
+
+# Create StandardScaler object for feature standardization
+scaler = StandardScaler()
+
+# Calculate mean and standard deviation from normal training data
+# Then transform the training data using these values
+X_train_normal = scaler.fit_transform(X_train_normal_raw)
+
+# Transform validation data using the same training statistics
+X_val_normal = scaler.transform(X_val_normal_raw)
+
+# Transform testing data using the same training statistics
+X_test = scaler.transform(X_test_raw)
+
+# Display preprocessed training data dimensions
+print("\nPreprocessed Training Shape:", X_train_normal.shape)
+
+# Display preprocessed validation data dimensions
+print("Preprocessed Validation Shape:", X_val_normal.shape)
+
+# Display preprocessed testing data dimensions
+print("Preprocessed Testing Shape:", X_test.shape)
+
+
+# ============================================================
+# CELL 7: BUILD ENCODER
+# ============================================================
+
+# PURPOSE:
+# Encoder compresses input data into a smaller latent
+# representation.
+#
+# Architecture:
+# Input -> 32 Neurons -> 16 Neurons -> 8 Neurons
+
+# Find the number of input features in ECG data
+input_dim = X_train_normal.shape[1]
+
+# Create encoder using Sequential API
+encoder = models.Sequential([
+
+    # Input layer accepts all ECG features
+    layers.Input(shape=(input_dim,)),
+
+    # First encoding layer compresses input into 32 neurons
+    # ReLU activation introduces non-linearity
+    layers.Dense(32, activation='relu'),
+
+    # Second encoding layer compresses data into 16 neurons
+    layers.Dense(16, activation='relu'),
+
+    # Latent representation compresses data into 8 values
+    layers.Dense(8, activation='relu')
+
+])
+
+# Display encoder architecture and parameters
+print("\nEncoder Summary:")
+encoder.summary()
+
+
+# ============================================================
+# CELL 8: BUILD DECODER
+# ============================================================
+
+# PURPOSE:
+# Decoder reconstructs the original input from
+# the compressed latent representation.
+#
+# Architecture:
+# Input -> 16 Neurons -> 32 Neurons -> 140 Neurons
+
+# Create decoder using Sequential API
+decoder = models.Sequential([
+
+    # Input is the 8-dimensional latent representation
+    layers.Input(shape=(8,)),
+
+    # First decoding layer expands representation into 16 neurons
+    layers.Dense(16, activation='relu'),
+
+    # Second decoding layer expands representation into 32 neurons
+    layers.Dense(32, activation='relu'),
+
+    # Reconstruct the original ECG features
+    # Linear activation allows continuous output values
+    layers.Dense(input_dim, activation='linear')
+
+])
+
+# Display decoder architecture and parameters
+print("\nDecoder Summary:")
+decoder.summary()
+
+
+# ============================================================
+# CELL 9: BUILD COMPLETE AUTOENCODER
+# ============================================================
+
+# PURPOSE:
+# Combine encoder and decoder into one Autoencoder.
+#
+# Input ECG -> Encoder -> Latent Representation
+# -> Decoder -> Reconstructed ECG
+
+# Combine encoder and decoder into a single Sequential model
+autoencoder = models.Sequential([
+
+    # Encoder compresses input ECG features
+    encoder,
+
+    # Decoder reconstructs the original ECG features
+    decoder
+])
+
+# Explicitly build the complete model with input dimensions
+# None represents a variable batch size
+autoencoder.build(input_shape=(None, input_dim))
+
+# Display complete Autoencoder architecture
+print("\nComplete Autoencoder Summary:")
+autoencoder.summary()
+
+
+# ============================================================
+# CELL 10: COMPILE THE AUTOENCODER
+# ============================================================
+
+# PURPOSE:
+# Configure optimizer, loss function and evaluation metric.
+#
+# Adam: Optimizer used to update model weights.
+# MSE: Measures reconstruction error.
+# MAE: Additional reconstruction evaluation metric.
+
+# Compile the Autoencoder before training
+autoencoder.compile(
+
+    # Adam optimizer updates model weights during training
+    optimizer='adam',
+
+    # Mean Squared Error measures the difference
+    # between original and reconstructed ECG features
+    loss='mean_squared_error',
+
+    # Mean Absolute Error is used as an additional metric
+    metrics=['mae']
+)
+
+
+# ============================================================
+# CELL 11: TRAIN THE AUTOENCODER
+# ============================================================
+
+# PURPOSE:
+# Train the Autoencoder using normal ECG records.
+#
+# Input and output are the same because an Autoencoder
+# learns to reconstruct its input.
+#
+# Validation data is also normal ECG data.
+
+# Train the Autoencoder and store training history
+history = autoencoder.fit(
+
+    # Provide normal ECG training records as input
+    X_train_normal,
+
+    # Provide the same data as target output
+    X_train_normal,
+
+    # Validate using normal ECG validation records
+    validation_data=(X_val_normal, X_val_normal),
+
+    # Train the Autoencoder for 20 epochs
+    epochs=20,
+
+    # Process 32 records in each batch
+    batch_size=32,
+
+    # Shuffle training records after each epoch
+    shuffle=True
+)
+
+
+# ============================================================
+# CELL 12: CALCULATE RECONSTRUCTION ERROR
+# ============================================================
+
+# PURPOSE:
+# Reconstruct testing ECG records using the trained model.
+#
+# MSE is calculated between original and reconstructed data.
+#
+# Higher reconstruction error indicates a possible anomaly.
+
+# Generate reconstructed ECG data for all test records
+y_pred = autoencoder.predict(X_test)
+
+# Calculate Mean Squared Error for each testing record
+# np.power(..., 2) squares the difference
+# np.mean(..., axis=1) calculates average error for each record
+mse = np.mean(np.power(X_test - y_pred, 2), axis=1)
+
+# Display the first ten reconstruction errors
+print("\nReconstruction Errors:")
+print(mse[:10])
+
+
+# ============================================================
+# CELL 13: DEFINE ANOMALY THRESHOLD
+# ============================================================
+
+# PURPOSE:
+# Calculate threshold using normal validation data.
+#
+# 95th percentile is selected as the threshold.
+# Records with reconstruction error above this threshold
+# are classified as anomalies.
+
+# Reconstruct normal validation ECG records
+val_pred = autoencoder.predict(X_val_normal)
+
+# Calculate reconstruction error for each validation record
+val_mse = np.mean(
+    np.power(X_val_normal - val_pred, 2),
+    axis=1
+)
+
+# Calculate the 95th percentile of validation reconstruction errors
+# This value is used as the anomaly detection threshold
+threshold = np.percentile(val_mse, 95)
+
+# Display the selected anomaly threshold
+print("\nAnomaly Threshold:", threshold)
+
+
+# ============================================================
+# CELL 14: DETECT ANOMALIES
+# ============================================================
+
+# PURPOSE:
+# Compare testing reconstruction errors with threshold.
+#
+# If MSE > Threshold: Anomaly
+# If MSE <= Threshold: Normal
+
+# Mark records with reconstruction error above threshold as anomalies
+# The result is a Boolean array containing True or False
+anomalies = mse > threshold
+
+# Count the number of detected anomalies
+num_anomalies = np.sum(anomalies)
+
+# Display the number of detected anomalies
+print("\nNumber of Anomalies:", num_anomalies)
+
+# Count and display the number of records classified as normal
+print("Number of Normal Records:", np.sum(~anomalies))
+
+
+# ============================================================
+# CELL 15: PLOT ANOMALY DETECTION RESULTS
+# ============================================================
+
+# PURPOSE:
+# Visualize reconstruction errors and anomaly threshold.
+#
+# Points above the red threshold line indicate anomalies.
+
+# Create a figure with width 12 and height 6
+plt.figure(figsize=(12, 6))
+
+# Plot reconstruction errors of testing records
+plt.plot(
+    mse,
+
+    # Display a circular marker for each data point
+    marker='o',
+
+    # Do not connect the data points with lines
+    linestyle='',
+
+    # Set marker size
+    markersize=3,
+
+    # Set legend label
+    label='Reconstruction Error'
+)
+
+# Draw a horizontal line representing the anomaly threshold
+plt.axhline(
+    threshold,
+
+    # Set threshold line color to red
+    color='red',
+
+    # Use dashed line style
+    linestyle='--',
+
+    # Set legend label
+    label='Anomaly Threshold'
+)
+
+# Set x-axis label
+plt.xlabel('Sample Index')
+
+# Set y-axis label
+plt.ylabel('Mean Squared Error')
+
+# Set graph title
+plt.title('Anomaly Detection Results')
+
+# Display graph legend
+plt.legend()
+
+# Display anomaly detection graph
+plt.show()
+
+
+# ============================================================
+# CELL 16: DISPLAY NORMAL ECG RECONSTRUCTION
+# ============================================================
+
+# PURPOSE:
+# Compare original and reconstructed normal ECG records.
+
+# Find indices of test records whose actual label is normal
+normal_indices = np.where(y_test_labels == NORMAL_LABEL)[0]
+
+# Check whether at least one normal record is available
+if len(normal_indices) > 0:
+
+    # Select the first normal record from testing data
+    normal_index = normal_indices[0]
+
+    # Create a figure for comparing ECG signals
+    plt.figure(figsize=(12, 6))
+
+    # Plot the original normal ECG record
+    plt.plot(
+        X_test[normal_index],
+        label='Original ECG'
+    )
+
+    # Plot the reconstructed normal ECG record
+    plt.plot(
+        y_pred[normal_index],
+        label='Reconstructed ECG'
+    )
+
+    # Set x-axis label
+    plt.xlabel('Feature Index')
+
+    # Set y-axis label
+    plt.ylabel('Amplitude')
+
+    # Set graph title
+    plt.title('Normal ECG Reconstruction')
+
+    # Display legend for both signals
+    plt.legend()
+
+    # Display comparison graph
+    plt.show()
+
+
+# ============================================================
+# CELL 17: DISPLAY ANOMALOUS ECG RECONSTRUCTION
+# ============================================================
+
+# PURPOSE:
+# Display original and reconstructed anomalous ECG records.
+#
+# Anomalous records generally have larger reconstruction
+# errors than normal records.
+
+# Find indices of records predicted as anomalies
+anomalies_index = np.where(anomalies)[0]
+
+# Check whether at least one anomaly was detected
+if len(anomalies_index) > 0:
+
+    # Select the first detected anomalous record
+    anomaly_index = anomalies_index[0]
+
+    # Create a figure for comparing ECG signals
+    plt.figure(figsize=(12, 6))
+
+    # Plot the original ECG record
+    plt.plot(
+        X_test[anomaly_index],
+        label='Original ECG'
+    )
+
+    # Plot the reconstructed ECG record
+    plt.plot(
+        y_pred[anomaly_index],
+        label='Reconstructed ECG'
+    )
+
+    # Set x-axis label
+    plt.xlabel('Feature Index')
+
+    # Set y-axis label
+    plt.ylabel('Amplitude')
+
+    # Set graph title
+    plt.title('Anomalous ECG Reconstruction')
+
+    # Display legend for both signals
+    plt.legend()
+
+    # Display comparison graph
+    plt.show()
+
+# Execute this block if no anomalies were detected
+else:
+
+    # Display message when no anomalies are found
+    print("No anomalies detected in test data.")
+
+
+# ============================================================
+# CELL 18: EVALUATE MODEL PERFORMANCE
+# ============================================================
+
+# PURPOSE:
+# Compare actual dataset labels with predicted anomaly labels.
+#
+# Actual anomaly = 1 if label differs from NORMAL_LABEL.
+# Predicted anomaly = 1 if reconstruction error exceeds threshold.
+#
+# This gives a meaningful confusion matrix and classification
+# report, unlike comparing predictions with themselves.
+
+# Convert actual labels into binary anomaly labels
+# 0 represents normal and 1 represents anomaly
+y_true = (y_test_labels != NORMAL_LABEL).astype(int)
+
+# Convert predicted Boolean anomaly values into integers
+# False becomes 0 and True becomes 1
+y_predicted = anomalies.astype(int)
+
+# Calculate confusion matrix
+# labels=[0,1] specifies normal and anomaly class order
+cm = confusion_matrix(
+    y_true,
+    y_predicted,
+    labels=[0, 1]
+)
+
+# Display confusion matrix values
+print("\nConfusion Matrix:")
+print(cm)
+
+# Display classification report heading
+print("\nClassification Report:")
+
+# Calculate precision, recall, F1-score and support
+print(
+    classification_report(
+        y_true,
+        y_predicted,
+
+        # Specify the class order
+        labels=[0, 1],
+
+        # Assign names to both classes
+        target_names=['Normal', 'Anomaly'],
+
+        # Avoid division errors when a class has no predictions
+        zero_division=0
+    )
+)
+
+
+# ============================================================
+# CELL 19: VISUALIZE CONFUSION MATRIX
+# ============================================================
+
+# PURPOSE:
+# Display confusion matrix as a heatmap.
+#
+# It shows correct and incorrect normal/anomaly predictions.
+
+# Create a figure with width 6 and height 5
+plt.figure(figsize=(6, 5))
+
+# Create heatmap using Seaborn
+sns.heatmap(
+    cm,
+
+    # Display numerical values inside heatmap cells
+    annot=True,
+
+    # Display values as integers
+    fmt='d',
+
+    # Set heatmap color scheme
+    cmap='Blues',
+
+    # Set names for predicted classes on x-axis
+    xticklabels=['Normal', 'Anomaly'],
+
+    # Set names for actual classes on y-axis
+    yticklabels=['Normal', 'Anomaly']
+)
+
+# Set x-axis label
+plt.xlabel('Predicted Label')
+
+# Set y-axis label
+plt.ylabel('Actual Label')
+
+# Set graph title
+plt.title('Confusion Matrix')
+
+# Display confusion matrix heatmap
+plt.show()
+
+
+# ============================================================
+# CELL 20: PLOT TRAINING AND VALIDATION LOSS
+# ============================================================
+
+# PURPOSE:
+# Visualize the Autoencoder's training and validation loss.
+
+# Create a figure for loss graph
+plt.figure(figsize=(8, 5))
+
+# Plot training loss for every epoch
+plt.plot(
+    history.history['loss'],
+    label='Training Loss'
+)
+
+# Plot validation loss for every epoch
+plt.plot(
+    history.history['val_loss'],
+    label='Validation Loss'
+)
+
+# Set x-axis label
+plt.xlabel('Epoch')
+
+# Set y-axis label
+plt.ylabel('Mean Squared Error')
+
+# Set graph title
+plt.title('Autoencoder Training and Validation Loss')
+
+# Display legend for training and validation loss
+plt.legend()
+
+# Display loss graph
+plt.show()
+
+
+# ============================================================
+# CONCLUSION
+# ============================================================
+
+# Thus, we successfully implemented anomaly detection
+# using an Autoencoder on the ECG dataset.
+
+# The encoder compressed the ECG data into a latent
+# representation, and the decoder reconstructed the input.
+
+# Reconstruction error and a threshold were used to
+# identify anomalous records.
+
+# Model performance was evaluated using a confusion matrix,
+# precision, recall and F1-score.
+

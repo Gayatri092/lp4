@@ -1,0 +1,2095 @@
+https://data.caltech.edu/records/mzrjq-6wc02
+expand and extract all mainly in caltect-101 wale sare  
+
+https://chatgpt.com/c/6af7e751-eef4-83ee-89d6-38fa08116e1b
+
+Desktop => new folder Dl_lab => terminal => py -3.11 -m notebook /  python -m notebook  / python3 -m notebook
+python3 -m pip install notebook
+cd ~/Desktop/DL_lab
+python3 -m notebook
+
+path test :- 
+import os
+
+print("Current Folder:", os.getcwd())
+
+SOURCE_DATASET = "./caltech-101/caltech-101/101_ObjectCategories/101_ObjectCategories"
+
+if os.path.isdir(SOURCE_DATASET):
+    print("Dataset Found!")
+else:
+    print("Dataset Not Found!")
+
+1. Check installed Python versions
+py --list
+
+
+Tumhare system mein:
+- Python 3.15
+- Python 3.12
+- Python 3.11
+2. Update pip for Python 3.11
+py -3.11 -m pip install --upgrade pip
+
+
+3. Install Jupyter and common libraries
+py -3.11 -m pip install notebook ipykernel numpy==1.23.5 scipy==1.10.1 pandas matplotlib seaborn scikit-learn pillow h5py openpyxl
+
+
+4. Install TensorFlow and Keras
+py -3.11 -m pip install tensorflow==2.15.1 keras==2.15.0
+
+
+5. Install Theano-PyMC
+py -3.11 -m pip install Theano-PyMC==1.1.2
+
+
+6. Install PyTorch
+py -3.11 -m pip install torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cpu
+
+
+7. Register Jupyter kernel
+py -3.11 -m ipykernel install --user --name python311 --display-name "Python 3.11 - All DL Labs"
+
+
+8. Verify all packages
+Theano ke BLAS compatibility workaround ke saath:
+py -3.11 -c "import numpy.distutils.__config__ as c; c.blas_opt_info={}; import tensorflow as tf; import keras; import torch; import theano; import numpy; import pandas; import sklearn; import scipy; import matplotlib; import seaborn; import PIL; print('TensorFlow:',tf.__version__); print('Keras:',keras.__version__); print('PyTorch:',torch.__version__); print('Theano:',theano.__version__); print('NumPy:',numpy.__version__); print('ALL IMPORTS SUCCESSFUL')"
+
+
+9. Launch Jupyter Notebook
+Pehle apne lab folder mein jao:
+cd "C:\Users\GayatriMahajan\Documents\Gayatri\BE SPPU\SEM 7\DL\labs"
+
+
+Then:
+py -3.11 -m notebook
+
+validation import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+import numpy.distutils.__config__ as numpy_config
+numpy_config.blas_opt_info = {}
+
+import tensorflow as tf
+import keras
+import torch
+import theano
+import theano.tensor as T
+
+import numpy as np
+import pandas as pd
+import scipy
+import sklearn
+import matplotlib.pyplot as plt
+import seaborn as sns
+from PIL import Image
+
+print("All libraries imported successfully!")
+
+print("================= LAB 6 START ===========================")
+
+
+# ============================================================
+# CELL 1: IMPORT REQUIRED LIBRARIES
+# ============================================================
+
+import os
+import random
+import shutil
+import copy
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+import torchvision
+from torchvision import datasets, transforms, models
+from torchvision.models import VGG16_Weights
+
+from torch.utils.data import (
+    DataLoader, Subset, TensorDataset
+)
+
+SEED = 42
+
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
+
+device = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
+
+print("PyTorch Version:", torch.__version__)
+print("Torchvision Version:", torchvision.__version__)
+print("Device:", device)
+print("All libraries imported successfully!")
+
+
+# ============================================================
+# CELL 2: DEFINE DATASET PATHS AND PARAMETERS
+# ============================================================
+
+DATASET_DIR = "./datadir"
+
+SOURCE_DATASET = (
+    "./caltech-101/caltech-101/101_ObjectCategories/"
+    "101_ObjectCategories"
+)
+
+if not os.path.isdir(SOURCE_DATASET):
+    raise FileNotFoundError(
+        f"Dataset folder not found: {SOURCE_DATASET}"
+    )
+
+TRAIN_DIR = os.path.join(DATASET_DIR, "train")
+VALID_DIR = os.path.join(DATASET_DIR, "valid")
+TEST_DIR = os.path.join(DATASET_DIR, "test")
+
+BATCH_SIZE = 16
+LEARNING_RATE = 0.001
+
+print("Source Dataset:", SOURCE_DATASET)
+print("Dataset paths configured successfully!")
+
+
+# ============================================================
+# CELL 3: LOAD EXISTING CALTECH-101 DATASET
+# ============================================================
+
+classes = sorted([
+    folder for folder in os.listdir(SOURCE_DATASET)
+    if os.path.isdir(os.path.join(SOURCE_DATASET, folder))
+    and folder != "BACKGROUND_Google"
+    and not folder.startswith(".")
+])
+
+print("Caltech-101 Dataset Found Successfully!")
+print("Number of Classes:", len(classes))
+print("Classes:", classes)
+
+assert len(classes) == 101, (
+    f"Expected 101 classes, found {len(classes)}"
+)
+
+
+# ============================================================
+# CELL 4: SPLIT DATASET
+# Training: 50%, Validation: 25%, Testing: 25%
+# ============================================================
+
+valid_extensions = (".jpg", ".jpeg", ".png", ".bmp")
+
+random.seed(SEED)
+
+# Identify only folders that directly contain images
+class_names = []
+
+for folder in sorted(os.listdir(SOURCE_DATASET)):
+
+    class_path = os.path.join(SOURCE_DATASET, folder)
+
+    if not os.path.isdir(class_path):
+        continue
+
+    if folder == "BACKGROUND_Google" or folder.startswith("."):
+        continue
+
+    image_files = [
+        f for f in os.listdir(class_path)
+        if f.lower().endswith(valid_extensions)
+        and os.path.isfile(os.path.join(class_path, f))
+    ]
+
+    if len(image_files) > 0:
+        class_names.append(folder)
+
+print("Verified classes:", len(class_names))
+
+assert len(class_names) == 101, (
+    f"Expected 101 classes, found {len(class_names)}"
+)
+
+# Remove only previously generated split folder
+if os.path.exists(DATASET_DIR):
+    shutil.rmtree(DATASET_DIR)
+
+# Create train, validation and test folders
+for split in ["train", "valid", "test"]:
+
+    for class_name in class_names:
+
+        os.makedirs(
+            os.path.join(DATASET_DIR, split, class_name),
+            exist_ok=True
+        )
+
+train_count = 0
+valid_count = 0
+test_count = 0
+
+# Split each class independently
+for class_name in class_names:
+
+    class_path = os.path.join(SOURCE_DATASET, class_name)
+
+    images = [
+        f for f in os.listdir(class_path)
+        if f.lower().endswith(valid_extensions)
+        and os.path.isfile(os.path.join(class_path, f))
+    ]
+
+    random.shuffle(images)
+
+    total = len(images)
+
+    train_end = int(total * 0.50)
+    valid_end = int(total * 0.75)
+
+    split_data = {
+        "train": images[:train_end],
+        "valid": images[train_end:valid_end],
+        "test": images[valid_end:]
+    }
+
+    for split, files in split_data.items():
+
+        for filename in files:
+
+            source = os.path.join(class_path, filename)
+
+            destination = os.path.join(
+                DATASET_DIR, split, class_name, filename
+            )
+
+            shutil.copy2(source, destination)
+
+    train_count += len(split_data["train"])
+    valid_count += len(split_data["valid"])
+    test_count += len(split_data["test"])
+
+print("\nDataset Splitting Completed!")
+print("Number of Classes:", len(class_names))
+print("Training Images:", train_count)
+print("Validation Images:", valid_count)
+print("Testing Images:", test_count)
+print("Total Images:", train_count + valid_count + test_count)
+
+
+# ============================================================
+# CELL 5: DEFINE IMAGE TRANSFORMATIONS
+# ============================================================
+
+# ImageNet normalization values
+mean = [0.485, 0.456, 0.406]
+std = [0.229, 0.224, 0.225]
+
+image_transforms = {
+
+    # Training transformations with data augmentation
+    "train": transforms.Compose([
+        transforms.RandomResizedCrop(
+            size=256,
+            scale=(0.8, 1.0)
+        ),
+        transforms.RandomRotation(degrees=15),
+        transforms.ColorJitter(),
+        transforms.RandomHorizontalFlip(),
+        transforms.CenterCrop(size=224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean, std)
+    ]),
+
+    # Validation transformations
+    "valid": transforms.Compose([
+        transforms.Resize(size=256),
+        transforms.CenterCrop(size=224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean, std)
+    ]),
+
+    # Testing transformations
+    "test": transforms.Compose([
+        transforms.Resize(size=256),
+        transforms.CenterCrop(size=224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean, std)
+    ])
+}
+
+print("Training Transformations Created!")
+print("Validation Transformations Created!")
+print("Testing Transformations Created!")
+
+
+# ============================================================
+# CELL 6: CREATE DATASETS AND DATALOADERS
+# ============================================================
+
+data = {
+
+    "train": datasets.ImageFolder(
+        root=TRAIN_DIR,
+        transform=image_transforms["train"]
+    ),
+
+    "valid": datasets.ImageFolder(
+        root=VALID_DIR,
+        transform=image_transforms["valid"]
+    ),
+
+    "test": datasets.ImageFolder(
+        root=TEST_DIR,
+        transform=image_transforms["test"]
+    )
+}
+
+# Create DataLoaders
+dataloaders = {
+
+    "train": DataLoader(
+        data["train"],
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        num_workers=0
+    ),
+
+    "valid": DataLoader(
+        data["valid"],
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=0
+    ),
+
+    "test": DataLoader(
+        data["test"],
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=0
+    )
+}
+
+print("Datasets and DataLoaders Created Successfully!")
+
+print("\nDataset Sizes:")
+print("Training:", len(data["train"]))
+print("Validation:", len(data["valid"]))
+print("Testing:", len(data["test"]))
+
+print("\nNumber of Classes:", len(data["train"].classes))
+
+# Check one batch
+images, labels = next(iter(dataloaders["train"]))
+
+print("\nBatch Image Shape:", images.shape)
+print("Batch Label Shape:", labels.shape)
+
+
+# ============================================================
+# CELL 7: LOAD PRETRAINED VGG16 MODEL
+# ============================================================
+
+num_classes = len(data["train"].classes)
+
+# Load VGG16 pretrained on ImageNet
+model = models.vgg16(
+    weights=VGG16_Weights.IMAGENET1K_V1
+)
+
+# Move model to CPU/GPU
+model = model.to(device)
+
+print("Pretrained VGG16 Model Loaded Successfully!")
+print("Model: VGG16")
+print("Pretrained Dataset: ImageNet")
+print("Number of Classes in Our Dataset:", num_classes)
+
+print(model)
+
+
+# ============================================================
+# CELL 8-10: FREEZE VGG16 + ADD CUSTOM CLASSIFIER
+# + COMPILE
+# ============================================================
+
+# STEP 1: FREEZE PRETRAINED VGG16 PARAMETERS
+
+for param in model.parameters():
+    param.requires_grad = False
+
+print("\nPretrained VGG16 Layers Frozen Successfully!")
+
+# STEP 2: ADD CUSTOM CLASSIFIER
+
+n_inputs = model.classifier[6].in_features
+
+model.classifier[6] = nn.Sequential(
+    nn.Linear(n_inputs, 256),
+    nn.ReLU(),
+    nn.Dropout(0.4),
+    nn.Linear(256, num_classes),
+    nn.LogSoftmax(dim=1)
+)
+
+model = model.to(device)
+
+print("Custom Classifier Added Successfully!")
+print("Output Classes:", num_classes)
+
+# STEP 3: DEFINE LOSS FUNCTION AND OPTIMIZER
+
+criterion = nn.NLLLoss()
+
+optimizer = optim.Adam(
+    model.classifier[6].parameters(),
+    lr=LEARNING_RATE
+)
+
+print("\nLoss Function: NLLLoss")
+print("Optimizer: Adam")
+print("Learning Rate:", LEARNING_RATE)
+
+# STEP 4: CHECK TRAINABLE PARAMETERS
+
+trainable_params = sum(
+    p.numel() for p in model.parameters()
+    if p.requires_grad
+)
+
+total_params = sum(
+    p.numel() for p in model.parameters()
+)
+
+print("\nTotal Parameters:", total_params)
+print("Trainable Parameters:", trainable_params)
+print("Frozen Parameters:", total_params - trainable_params)
+
+print("\nVGG16 Transfer Learning Model Ready!")
+
+
+# ============================================================
+# CELL 11: CREATE SMALL BALANCED DATASETS
+# ============================================================
+
+random.seed(SEED)
+
+def select_images(dataset, images_per_class):
+
+    class_indices = {}
+
+    for index, (_, label) in enumerate(dataset.samples):
+
+        class_indices.setdefault(label, []).append(index)
+
+    selected_indices = []
+
+    for label, indices in class_indices.items():
+
+        random.shuffle(indices)
+
+        selected_indices.extend(
+            indices[:images_per_class]
+        )
+
+    return selected_indices
+
+
+train_indices = select_images(data["train"], 5)
+valid_indices = select_images(data["valid"], 2)
+test_indices = select_images(data["test"], 2)
+
+small_data = {
+
+    "train": Subset(data["train"], train_indices),
+    "valid": Subset(data["valid"], valid_indices),
+    "test": Subset(data["test"], test_indices)
+}
+
+small_loaders = {
+
+    split: DataLoader(
+        small_data[split],
+        batch_size=8,
+        shuffle=(split == "train"),
+        num_workers=0
+    )
+
+    for split in ["train", "valid", "test"]
+}
+
+print("Lightweight datasets created!")
+print("Training images:", len(small_data["train"]))
+print("Validation images:", len(small_data["valid"]))
+print("Testing images:", len(small_data["test"]))
+
+
+# ============================================================
+# CELL 12: EXTRACT VGG16 FEATURES
+# ============================================================
+
+def extract_features(loader):
+
+    model.eval()
+
+    features_list = []
+    labels_list = []
+
+    with torch.no_grad():
+
+        for images, labels in loader:
+
+            images = images.to(device)
+
+            # VGG16 convolutional layers
+            x = model.features(images)
+
+            # Adaptive average pooling
+            x = model.avgpool(x)
+
+            # Flatten
+            x = torch.flatten(x, 1)
+
+            # Frozen pretrained classifier layers
+            x = model.classifier[:6](x)
+
+            features_list.append(x.cpu())
+            labels_list.append(labels)
+
+    return (
+        torch.cat(features_list),
+        torch.cat(labels_list)
+    )
+
+
+print("Extracting training features...")
+
+train_features, train_labels = extract_features(
+    small_loaders["train"]
+)
+
+print("Extracting validation features...")
+
+valid_features, valid_labels = extract_features(
+    small_loaders["valid"]
+)
+
+print("Extracting testing features...")
+
+test_features, test_labels = extract_features(
+    small_loaders["test"]
+)
+
+print("\nFeature Extraction Completed!")
+
+print("Training Features:", train_features.shape)
+print("Validation Features:", valid_features.shape)
+print("Testing Features:", test_features.shape)
+
+
+# ============================================================
+# CELL 13: TRAIN CUSTOM CLASSIFIER WITH EARLY STOPPING
+# ============================================================
+
+train_feature_loader = DataLoader(
+    TensorDataset(train_features, train_labels),
+    batch_size=32,
+    shuffle=True
+)
+
+valid_feature_loader = DataLoader(
+    TensorDataset(valid_features, valid_labels),
+    batch_size=32,
+    shuffle=False
+)
+
+criterion = nn.NLLLoss()
+
+optimizer = optim.Adam(
+    model.classifier[6].parameters(),
+    lr=0.001
+)
+
+train_losses = []
+valid_losses = []
+train_accuracies = []
+valid_accuracies = []
+
+best_val_loss = float("inf")
+
+best_weights = copy.deepcopy(
+    model.classifier[6].state_dict()
+)
+
+patience_counter = 0
+
+EPOCHS = 5
+PATIENCE = 2
+
+print("Custom Classifier Training Started!")
+
+for epoch in range(EPOCHS):
+
+    model.classifier[6].train()
+
+    running_loss = 0
+    correct = 0
+    total = 0
+
+    for features, labels in train_feature_loader:
+
+        features = features.to(device)
+        labels = labels.to(device)
+
+        optimizer.zero_grad()
+
+        outputs = model.classifier[6](features)
+
+        loss = criterion(outputs, labels)
+
+        loss.backward()
+        optimizer.step()
+
+        running_loss += loss.item() * labels.size(0)
+
+        predicted = outputs.argmax(dim=1)
+
+        correct += (predicted == labels).sum().item()
+        total += labels.size(0)
+
+    train_loss = running_loss / total
+    train_acc = correct / total
+
+    # Validation
+    model.classifier[6].eval()
+
+    val_loss = 0
+    val_correct = 0
+    val_total = 0
+
+    with torch.no_grad():
+
+        for features, labels in valid_feature_loader:
+
+            features = features.to(device)
+            labels = labels.to(device)
+
+            outputs = model.classifier[6](features)
+
+            loss = criterion(outputs, labels)
+
+            val_loss += loss.item() * labels.size(0)
+
+            predicted = outputs.argmax(dim=1)
+
+            val_correct += (predicted == labels).sum().item()
+            val_total += labels.size(0)
+
+    val_loss /= val_total
+    val_acc = val_correct / val_total
+
+    train_losses.append(train_loss)
+    valid_losses.append(val_loss)
+
+    train_accuracies.append(train_acc)
+    valid_accuracies.append(val_acc)
+
+    print(
+        f"Epoch {epoch+1}/{EPOCHS} | "
+        f"Train Loss: {train_loss:.4f} | "
+        f"Train Accuracy: {train_acc:.4f} | "
+        f"Val Loss: {val_loss:.4f} | "
+        f"Val Accuracy: {val_acc:.4f}"
+    )
+
+    # Early stopping
+    if val_loss < best_val_loss:
+
+        best_val_loss = val_loss
+
+        best_weights = copy.deepcopy(
+            model.classifier[6].state_dict()
+        )
+
+        patience_counter = 0
+
+    else:
+
+        patience_counter += 1
+
+    if patience_counter >= PATIENCE:
+
+        print("Early Stopping Triggered!")
+        break
+
+# Restore best classifier weights
+model.classifier[6].load_state_dict(best_weights)
+
+print("\nClassifier Training Completed!")
+
+
+# ============================================================
+# CELL 14: FINE-TUNE LAST VGG16 CONVOLUTION BLOCK
+# ============================================================
+
+# Unfreeze last convolution block
+for layer_index in [24, 26, 28]:
+
+    for param in model.features[layer_index].parameters():
+
+        param.requires_grad = True
+
+# Keep pretrained classifier layers frozen
+for param in model.classifier[:6].parameters():
+
+    param.requires_grad = False
+
+model.train()
+
+fine_tune_optimizer = optim.Adam(
+    filter(
+        lambda p: p.requires_grad,
+        model.parameters()
+    ),
+    lr=0.00001
+)
+
+# Fine-tune using one small batch
+images, labels = next(iter(small_loaders["train"]))
+
+images = images.to(device)
+labels = labels.to(device)
+
+fine_tune_optimizer.zero_grad()
+
+outputs = model(images)
+
+loss = criterion(outputs, labels)
+
+loss.backward()
+fine_tune_optimizer.step()
+
+print("Last VGG16 convolution block unfrozen!")
+print("Fine-tuning completed on one batch.")
+print("Fine-tuning learning rate: 0.00001")
+
+# Re-extract test features after fine-tuning
+test_features, test_labels = extract_features(
+    small_loaders["test"]
+)
+
+print("Updated test features extracted!")
+
+
+# ============================================================
+# CELL 15: TEST MODEL AND PLOT PERFORMANCE
+# ============================================================
+
+model.eval()
+
+correct = 0
+total = 0
+
+with torch.no_grad():
+
+    test_loader = DataLoader(
+        TensorDataset(test_features, test_labels),
+        batch_size=32,
+        shuffle=False
+    )
+
+    for features, labels in test_loader:
+
+        features = features.to(device)
+        labels = labels.to(device)
+
+        outputs = model.classifier[6](features)
+
+        predicted = outputs.argmax(dim=1)
+
+        total += labels.size(0)
+
+        correct += (
+            predicted == labels
+        ).sum().item()
+
+test_accuracy = 100 * correct / total
+
+print("Test Images:", total)
+print("Test Accuracy:", round(test_accuracy, 2), "%")
+
+# Performance curves
+plt.figure(figsize=(12, 4))
+
+plt.subplot(1, 2, 1)
+
+plt.plot(train_losses, label="Training Loss")
+plt.plot(valid_losses, label="Validation Loss")
+
+plt.title("Training and Validation Loss")
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.legend()
+
+plt.subplot(1, 2, 2)
+
+plt.plot(train_accuracies, label="Training Accuracy")
+plt.plot(valid_accuracies, label="Validation Accuracy")
+
+plt.title("Training and Validation Accuracy")
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+print("\nVGG16 Transfer Learning Practical Completed!")
+==========================================================================
+
+# ============================================================
+# CELL 1 TO CELL 5 COMBINED WITH LINE-BY-LINE COMMENTS
+# ============================================================
+
+# ----------------------------
+# CELL 1 : IMPORT LIBRARIES
+# ----------------------------
+
+import os
+# Imports operating system module.
+# Used for folder navigation, directory checking and path operations.
+
+import random
+# Imports random module.
+# Used for randomly shuffling images before dataset splitting.
+
+import shutil
+# Used for file and folder copy/delete operations.
+
+import copy
+# Used for creating deep copies of objects.
+# Later used to save best model weights during training.
+
+import numpy as np
+# Imports NumPy for numerical operations and array handling.
+
+import matplotlib.pyplot as plt
+# Imports plotting library used to create graphs and visualizations.
+
+import torch
+# Main PyTorch library used for deep learning operations.
+
+import torch.nn as nn
+# Imports neural network components such as Linear, ReLU, Dropout.
+
+import torch.optim as optim
+# Imports optimization algorithms like Adam and SGD.
+
+import torchvision
+# Torchvision provides image datasets, models and transformations.
+
+from torchvision import datasets, transforms, models
+# datasets -> For loading image datasets.
+# transforms -> For image preprocessing.
+# models -> For pretrained CNN models like VGG16.
+
+from torchvision.models import VGG16_Weights
+# Imports pretrained ImageNet weights for VGG16.
+
+from torch.utils.data import (
+    DataLoader, Subset, TensorDataset
+)
+# DataLoader -> Loads data in batches.
+# Subset -> Creates smaller portions of datasets.
+# TensorDataset -> Creates datasets directly from tensors.
+
+SEED = 42
+# Defines a fixed seed value.
+# Ensures same random output every time code runs.
+
+random.seed(SEED)
+# Sets random seed for Python's random module.
+
+np.random.seed(SEED)
+# Sets random seed for NumPy operations.
+
+torch.manual_seed(SEED)
+# Sets random seed for PyTorch CPU operations.
+
+if torch.cuda.is_available():
+    # Checks whether GPU is available.
+
+    torch.cuda.manual_seed_all(SEED)
+    # Sets random seed for all available GPUs.
+
+device = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
+# Selects GPU if available, otherwise CPU.
+
+print("PyTorch Version:", torch.__version__)
+# Displays installed PyTorch version.
+
+print("Torchvision Version:", torchvision.__version__)
+# Displays installed Torchvision version.
+
+print("Device:", device)
+# Shows whether model will run on CPU or GPU.
+
+print("All libraries imported successfully!")
+# Confirmation message after successful imports.
+
+
+
+# ----------------------------
+# CELL 2 : DATASET PATHS
+# ----------------------------
+
+DATASET_DIR = "./datadir"
+# Folder where train, validation and test datasets will be stored.
+
+SOURCE_DATASET = (
+    "./caltech-101/caltech-101/101_ObjectCategories/"
+    "101_ObjectCategories"
+)
+# Path of original Caltech-101 dataset.
+
+if not os.path.isdir(SOURCE_DATASET):
+    # Checks whether dataset directory exists.
+
+    raise FileNotFoundError(
+        f"Dataset folder not found: {SOURCE_DATASET}"
+    )
+    # Stops execution if dataset is missing.
+
+TRAIN_DIR = os.path.join(DATASET_DIR, "train")
+# Creates train folder path.
+
+VALID_DIR = os.path.join(DATASET_DIR, "valid")
+# Creates validation folder path.
+
+TEST_DIR = os.path.join(DATASET_DIR, "test")
+# Creates testing folder path.
+
+BATCH_SIZE = 16
+# Number of images processed together during training.
+
+LEARNING_RATE = 0.001
+# Controls how much model weights update after each iteration.
+
+print("Source Dataset:", SOURCE_DATASET)
+# Displays source dataset path.
+
+print("Dataset paths configured successfully!")
+# Confirmation message.
+
+
+
+# ----------------------------
+# CELL 3 : LOAD CALTECH-101
+# ----------------------------
+
+classes = sorted([
+    folder for folder in os.listdir(SOURCE_DATASET)
+    if os.path.isdir(os.path.join(SOURCE_DATASET, folder))
+    and folder != "BACKGROUND_Google"
+    and not folder.startswith(".")
+])
+# Creates a sorted list of valid dataset classes.
+# Excludes BACKGROUND_Google folder.
+# Ignores hidden folders starting with '.'.
+
+print("Caltech-101 Dataset Found Successfully!")
+# Displays dataset loading status.
+
+print("Number of Classes:", len(classes))
+# Displays total class count.
+
+print("Classes:", classes)
+# Displays class names.
+
+assert len(classes) == 101, (
+    f"Expected 101 classes, found {len(classes)}"
+)
+# Ensures dataset contains exactly 101 categories.
+# Stops program if count is incorrect.
+
+
+
+# ----------------------------
+# CELL 4 : DATASET SPLITTING
+# ----------------------------
+
+valid_extensions = (
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".bmp"
+)
+# Allowed image file formats.
+
+random.seed(SEED)
+# Ensures reproducible dataset split.
+
+class_names = []
+# Empty list to store verified class names.
+
+for folder in sorted(os.listdir(SOURCE_DATASET)):
+    # Iterates through every folder in dataset.
+
+    class_path = os.path.join(
+        SOURCE_DATASET,
+        folder
+    )
+    # Creates complete folder path.
+
+    if not os.path.isdir(class_path):
+        continue
+    # Skips files and keeps only folders.
+
+    if folder == "BACKGROUND_Google" or folder.startswith("."):
+        continue
+    # Ignores unwanted directories.
+
+    image_files = [
+        f for f in os.listdir(class_path)
+        if f.lower().endswith(valid_extensions)
+        and os.path.isfile(
+            os.path.join(class_path, f)
+        )
+    ]
+    # Collects valid image files only.
+
+    if len(image_files) > 0:
+        class_names.append(folder)
+    # Adds folder to class list if images exist.
+
+print("Verified classes:", len(class_names))
+# Displays total verified classes.
+
+assert len(class_names) == 101, (
+    f"Expected 101 classes, found {len(class_names)}"
+)
+# Verifies all 101 classes are detected.
+
+if os.path.exists(DATASET_DIR):
+    shutil.rmtree(DATASET_DIR)
+# Deletes old split dataset folder if it already exists.
+
+for split in ["train", "valid", "test"]:
+    # Loops through dataset partitions.
+
+    for class_name in class_names:
+        # Creates class-wise folders.
+
+        os.makedirs(
+            os.path.join(
+                DATASET_DIR,
+                split,
+                class_name
+            ),
+            exist_ok=True
+        )
+        # Creates folders if they do not exist.
+
+train_count = 0
+# Counter for training images.
+
+valid_count = 0
+# Counter for validation images.
+
+test_count = 0
+# Counter for testing images.
+
+for class_name in class_names:
+    # Processes each class independently.
+
+    class_path = os.path.join(
+        SOURCE_DATASET,
+        class_name
+    )
+    # Complete path of class folder.
+
+    images = [
+        f for f in os.listdir(class_path)
+        if f.lower().endswith(valid_extensions)
+        and os.path.isfile(
+            os.path.join(class_path, f)
+        )
+    ]
+    # Collects image filenames.
+
+    random.shuffle(images)
+    # Randomizes image order.
+
+    total = len(images)
+    # Total images in current class.
+
+    train_end = int(total * 0.50)
+    # First 50% images assigned to training.
+
+    valid_end = int(total * 0.75)
+    # Next 25% images assigned to validation.
+
+    split_data = {
+        "train": images[:train_end],
+        "valid": images[train_end:valid_end],
+        "test": images[valid_end:]
+    }
+    # Stores train-valid-test image groups.
+
+    for split, files in split_data.items():
+
+        for filename in files:
+
+            source = os.path.join(
+                class_path,
+                filename
+            )
+            # Original image location.
+
+            destination = os.path.join(
+                DATASET_DIR,
+                split,
+                class_name,
+                filename
+            )
+            # Destination image location.
+
+            shutil.copy2(
+                source,
+                destination
+            )
+            # Copies image into split folder.
+
+    train_count += len(split_data["train"])
+    # Updates train image count.
+
+    valid_count += len(split_data["valid"])
+    # Updates validation image count.
+
+    test_count += len(split_data["test"])
+    # Updates test image count.
+
+print("\nDataset Splitting Completed!")
+# Indicates completion of splitting.
+
+print("Number of Classes:", len(class_names))
+# Shows total classes.
+
+print("Training Images:", train_count)
+# Displays total training images.
+
+print("Validation Images:", valid_count)
+# Displays total validation images.
+
+print("Testing Images:", test_count)
+# Displays total testing images.
+
+print(
+    "Total Images:",
+    train_count + valid_count + test_count
+)
+# Displays total dataset size.
+
+
+
+# ----------------------------
+# CELL 5 : IMAGE TRANSFORMS
+# ----------------------------
+
+mean = [0.485, 0.456, 0.406]
+# ImageNet mean values used for normalization.
+
+std = [0.229, 0.224, 0.225]
+# ImageNet standard deviation values.
+
+image_transforms = {
+
+    "train": transforms.Compose([
+        # Applies multiple transformations sequentially.
+
+        transforms.RandomResizedCrop(
+            size=256,
+            scale=(0.8, 1.0)
+        ),
+        # Randomly crops image and resizes to 256.
+        # Improves generalization.
+
+        transforms.RandomRotation(
+            degrees=15
+        ),
+        # Randomly rotates image up to ±15 degrees.
+
+        transforms.ColorJitter(),
+        # Randomly changes brightness, contrast etc.
+
+        transforms.RandomHorizontalFlip(),
+        # Horizontally flips image randomly.
+
+        transforms.CenterCrop(
+            size=224
+        ),
+        # Crops center region of image.
+
+        transforms.ToTensor(),
+        # Converts image into tensor format.
+
+        transforms.Normalize(
+            mean,
+            std
+        )
+        # Normalizes image using ImageNet values.
+    ]),
+
+    "valid": transforms.Compose([
+
+        transforms.Resize(size=256),
+        # Resizes image.
+
+        transforms.CenterCrop(size=224),
+        # Takes center crop.
+
+        transforms.ToTensor(),
+        # Converts image to tensor.
+
+        transforms.Normalize(
+            mean,
+            std
+        )
+        # Normalizes image.
+    ]),
+
+    "test": transforms.Compose([
+
+        transforms.Resize(size=256),
+        # Resizes image.
+
+        transforms.CenterCrop(size=224),
+        # Center crop.
+
+        transforms.ToTensor(),
+        # Tensor conversion.
+
+        transforms.Normalize(
+            mean,
+            std
+        )
+        # Normalization for testing.
+    ])
+}
+
+print("Training Transformations Created!")
+# Confirms train transform creation.
+
+print("Validation Transformations Created!")
+# Confirms validation transform creation.
+
+print("Testing Transformations Created!")
+# Confirms testing transform creation.
+
+# ============================================================
+# CELL 6 TO CELL 10 COMBINED WITH LINE-BY-LINE COMMENTS
+# ============================================================
+
+
+# ============================================================
+# CELL 6 : CREATE DATASETS AND DATALOADERS
+# ============================================================
+
+data = {
+
+    "train": datasets.ImageFolder(
+        root=TRAIN_DIR,
+        transform=image_transforms["train"]
+    ),
+    # Loads training images from TRAIN_DIR.
+    # Applies training transformations such as augmentation.
+    # ImageFolder automatically assigns labels based on folder names.
+
+    "valid": datasets.ImageFolder(
+        root=VALID_DIR,
+        transform=image_transforms["valid"]
+    ),
+    # Loads validation dataset.
+    # Applies validation transformations only.
+
+    "test": datasets.ImageFolder(
+        root=TEST_DIR,
+        transform=image_transforms["test"]
+    )
+    # Loads test dataset.
+    # Applies testing transformations.
+}
+
+# Create DataLoaders
+dataloaders = {
+
+    "train": DataLoader(
+        data["train"],
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        num_workers=0
+    ),
+    # Creates DataLoader for training dataset.
+    # batch_size=16 loads 16 images at a time.
+    # shuffle=True randomizes image order every epoch.
+    # num_workers=0 means data loading occurs in main process.
+
+    "valid": DataLoader(
+        data["valid"],
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=0
+    ),
+    # Validation data must remain fixed.
+    # Therefore shuffle=False.
+
+    "test": DataLoader(
+        data["test"],
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=0
+    )
+    # Creates DataLoader for testing.
+    # No shuffling required.
+}
+
+print("Datasets and DataLoaders Created Successfully!")
+# Displays confirmation message.
+
+print("\nDataset Sizes:")
+# Heading for dataset statistics.
+
+print("Training:", len(data["train"]))
+# Displays total training images.
+
+print("Validation:", len(data["valid"]))
+# Displays total validation images.
+
+print("Testing:", len(data["test"]))
+# Displays total testing images.
+
+print("\nNumber of Classes:", len(data["train"].classes))
+# Displays total class count.
+
+# Check one batch
+images, labels = next(iter(dataloaders["train"]))
+# Generates first batch from training DataLoader.
+# Used to verify image and label dimensions.
+
+print("\nBatch Image Shape:", images.shape)
+# Displays tensor dimensions of image batch.
+
+print("Batch Label Shape:", labels.shape)
+# Displays tensor dimensions of corresponding labels.
+
+
+
+# ============================================================
+# CELL 7 : LOAD PRETRAINED VGG16 MODEL
+# ============================================================
+
+num_classes = len(data["train"].classes)
+# Stores number of output classes.
+# For Caltech-101, value should be 101.
+
+# Load VGG16 pretrained on ImageNet
+model = models.vgg16(
+    weights=VGG16_Weights.IMAGENET1K_V1
+)
+# Loads pretrained VGG16 model.
+# Uses weights learned from ImageNet dataset.
+# Allows transfer learning instead of training from scratch.
+
+# Move model to CPU/GPU
+model = model.to(device)
+# Moves model to GPU if available.
+# Otherwise runs on CPU.
+
+print("Pretrained VGG16 Model Loaded Successfully!")
+# Confirmation message.
+
+print("Model: VGG16")
+# Model name.
+
+print("Pretrained Dataset: ImageNet")
+# Indicates pretrained source dataset.
+
+print("Number of Classes in Our Dataset:", num_classes)
+# Displays class count required for output layer.
+
+print(model)
+# Prints complete VGG16 architecture.
+
+
+
+# ============================================================
+# CELL 8-10 : FREEZE VGG16 + ADD CUSTOM CLASSIFIER
+# ============================================================
+
+# STEP 1 : FREEZE PRETRAINED VGG16 PARAMETERS
+
+for param in model.parameters():
+    param.requires_grad = False
+# Freezes all VGG16 layers.
+# Backpropagation will not update these weights.
+# Saves training time and preserves ImageNet knowledge.
+
+print("\nPretrained VGG16 Layers Frozen Successfully!")
+# Confirmation message.
+
+
+# ============================================================
+# STEP 2 : ADD CUSTOM CLASSIFIER
+# ============================================================
+
+n_inputs = model.classifier[6].in_features
+# Retrieves number of input neurons of original VGG16 output layer.
+# Typically equals 4096.
+
+model.classifier[6] = nn.Sequential(
+
+    nn.Linear(n_inputs, 256),
+    # Fully connected layer.
+    # Reduces features from 4096 to 256 neurons.
+
+    nn.ReLU(),
+    # ReLU activation.
+    # Introduces non-linearity.
+
+    nn.Dropout(0.4),
+    # Randomly drops 40% neurons during training.
+    # Helps prevent overfitting.
+
+    nn.Linear(256, num_classes),
+    # Final output layer.
+    # Produces scores for all classes.
+
+    nn.LogSoftmax(dim=1)
+    # Converts scores into log-probabilities.
+    # Required because NLLLoss is used later.
+)
+
+model = model.to(device)
+# Moves modified model to CPU/GPU.
+
+print("Custom Classifier Added Successfully!")
+# Confirmation message.
+
+print("Output Classes:", num_classes)
+# Displays classifier output size.
+
+
+# ============================================================
+# STEP 3 : DEFINE LOSS FUNCTION AND OPTIMIZER
+# ============================================================
+
+criterion = nn.NLLLoss()
+# Negative Log Likelihood Loss.
+# Suitable when model outputs LogSoftmax probabilities.
+
+optimizer = optim.Adam(
+    model.classifier[6].parameters(),
+    lr=LEARNING_RATE
+)
+# Adam optimizer updates classifier weights.
+# Only custom classifier parameters are trainable.
+# Learning rate controls update size.
+
+print("\nLoss Function: NLLLoss")
+# Displays selected loss function.
+
+print("Optimizer: Adam")
+# Displays optimizer name.
+
+print("Learning Rate:", LEARNING_RATE)
+# Displays learning rate value.
+
+
+# ============================================================
+# STEP 4 : CHECK TRAINABLE PARAMETERS
+# ============================================================
+
+trainable_params = sum(
+    p.numel() for p in model.parameters()
+    if p.requires_grad
+)
+# Counts parameters whose weights can be updated.
+# These belong to newly created classifier.
+
+total_params = sum(
+    p.numel() for p in model.parameters()
+)
+# Counts all parameters in model.
+
+print("\nTotal Parameters:", total_params)
+# Displays total model parameters.
+
+print("Trainable Parameters:", trainable_params)
+# Displays trainable parameters.
+
+print(
+    "Frozen Parameters:",
+    total_params - trainable_params
+)
+# Displays frozen parameters.
+
+print("\nVGG16 Transfer Learning Model Ready!")
+# Indicates model is prepared for training.
+
+# ============================================================
+# CELL 11 TO CELL 15 COMBINED WITH LINE-BY-LINE COMMENTS
+# ============================================================
+
+
+# ============================================================
+# CELL 11 : CREATE SMALL BALANCED DATASETS
+# ============================================================
+
+random.seed(SEED)
+# Sets random seed again to ensure reproducible sampling.
+
+def select_images(dataset, images_per_class):
+# Function to select a fixed number of images from each class.
+# This helps create a balanced dataset.
+
+    class_indices = {}
+    # Dictionary to store image indices for each class.
+
+    for index, (_, label) in enumerate(dataset.samples):
+    # Loops through all dataset samples.
+    # index = image position
+    # label = class label
+
+        class_indices.setdefault(label, []).append(index)
+        # Creates key if not present.
+        # Stores image index under corresponding class label.
+
+    selected_indices = []
+    # Empty list to store selected image indices.
+
+    for label, indices in class_indices.items():
+    # Loops through each class.
+
+        random.shuffle(indices)
+        # Randomizes image order.
+
+        selected_indices.extend(
+            indices[:images_per_class]
+        )
+        # Selects required number of images per class.
+
+    return selected_indices
+    # Returns final selected image indices.
+
+
+train_indices = select_images(data["train"], 5)
+# Selects 5 images from each training class.
+
+valid_indices = select_images(data["valid"], 2)
+# Selects 2 images from each validation class.
+
+test_indices = select_images(data["test"], 2)
+# Selects 2 images from each testing class.
+
+small_data = {
+
+    "train": Subset(data["train"], train_indices),
+    # Creates training subset.
+
+    "valid": Subset(data["valid"], valid_indices),
+    # Creates validation subset.
+
+    "test": Subset(data["test"], test_indices)
+    # Creates testing subset.
+}
+
+small_loaders = {
+
+    split: DataLoader(
+        small_data[split],
+        batch_size=8,
+        shuffle=(split == "train"),
+        num_workers=0
+    )
+
+    for split in ["train", "valid", "test"]
+}
+# Creates DataLoader for all datasets.
+# Training data shuffled.
+# Validation and testing remain fixed.
+
+print("Lightweight datasets created!")
+# Confirmation message.
+
+print("Training images:", len(small_data["train"]))
+# Displays training image count.
+
+print("Validation images:", len(small_data["valid"]))
+# Displays validation image count.
+
+print("Testing images:", len(small_data["test"]))
+# Displays testing image count.
+
+
+
+# ============================================================
+# CELL 12 : EXTRACT VGG16 FEATURES
+# ============================================================
+
+def extract_features(loader):
+# Function extracts deep features using pretrained VGG16.
+
+    model.eval()
+    # Switches model to evaluation mode.
+    # Disables dropout behavior.
+
+    features_list = []
+    # Stores extracted features.
+
+    labels_list = []
+    # Stores corresponding labels.
+
+    with torch.no_grad():
+    # Disables gradient calculation.
+    # Saves memory and computation.
+
+        for images, labels in loader:
+        # Processes batches.
+
+            images = images.to(device)
+            # Moves images to CPU or GPU.
+
+            x = model.features(images)
+            # Passes images through VGG16 convolution layers.
+            # Extracts low-level and high-level visual features.
+
+            x = model.avgpool(x)
+            # Performs adaptive average pooling.
+
+            x = torch.flatten(x, 1)
+            # Converts multidimensional tensor into vector.
+
+            x = model.classifier[:6](x)
+            # Passes data through frozen classifier layers.
+            # Excludes final custom classifier layer.
+
+            features_list.append(x.cpu())
+            # Stores extracted features on CPU.
+
+            labels_list.append(labels)
+            # Stores labels.
+
+    return (
+        torch.cat(features_list),
+        torch.cat(labels_list)
+    )
+    # Combines all features and labels into single tensors.
+
+
+print("Extracting training features...")
+# Status message.
+
+train_features, train_labels = extract_features(
+    small_loaders["train"]
+)
+# Extracts training features.
+
+print("Extracting validation features...")
+# Status message.
+
+valid_features, valid_labels = extract_features(
+    small_loaders["valid"]
+)
+# Extracts validation features.
+
+print("Extracting testing features...")
+# Status message.
+
+test_features, test_labels = extract_features(
+    small_loaders["test"]
+)
+# Extracts testing features.
+
+print("\nFeature Extraction Completed!")
+# Confirmation.
+
+print("Training Features:", train_features.shape)
+# Displays training feature dimensions.
+
+print("Validation Features:", valid_features.shape)
+# Displays validation feature dimensions.
+
+print("Testing Features:", test_features.shape)
+# Displays testing feature dimensions.
+
+
+
+# ============================================================
+# CELL 13 : TRAIN CUSTOM CLASSIFIER WITH EARLY STOPPING
+# ============================================================
+
+train_feature_loader = DataLoader(
+    TensorDataset(train_features, train_labels),
+    batch_size=32,
+    shuffle=True
+)
+# Creates DataLoader using extracted training features.
+
+valid_feature_loader = DataLoader(
+    TensorDataset(valid_features, valid_labels),
+    batch_size=32,
+    shuffle=False
+)
+# Creates validation DataLoader.
+
+criterion = nn.NLLLoss()
+# Defines classification loss function.
+
+optimizer = optim.Adam(
+    model.classifier[6].parameters(),
+    lr=0.001
+)
+# Adam optimizer updates classifier weights.
+
+train_losses = []
+# Stores training loss values.
+
+valid_losses = []
+# Stores validation loss values.
+
+train_accuracies = []
+# Stores training accuracy values.
+
+valid_accuracies = []
+# Stores validation accuracy values.
+
+best_val_loss = float("inf")
+# Initializes best validation loss with very large value.
+
+best_weights = copy.deepcopy(
+    model.classifier[6].state_dict()
+)
+# Saves initial classifier weights.
+
+patience_counter = 0
+# Counts epochs without improvement.
+
+EPOCHS = 5
+# Maximum training epochs.
+
+PATIENCE = 2
+# Early stopping limit.
+
+print("Custom Classifier Training Started!")
+
+for epoch in range(EPOCHS):
+# Training loop.
+
+    model.classifier[6].train()
+    # Sets classifier to training mode.
+
+    running_loss = 0
+    correct = 0
+    total = 0
+
+    for features, labels in train_feature_loader:
+
+        features = features.to(device)
+        labels = labels.to(device)
+
+        optimizer.zero_grad()
+        # Clears old gradients.
+
+        outputs = model.classifier[6](features)
+        # Forward propagation.
+
+        loss = criterion(outputs, labels)
+        # Calculates loss.
+
+        loss.backward()
+        # Computes gradients.
+
+        optimizer.step()
+        # Updates weights.
+
+        running_loss += loss.item() * labels.size(0)
+
+        predicted = outputs.argmax(dim=1)
+        # Finds class with highest probability.
+
+        correct += (predicted == labels).sum().item()
+        # Counts correct predictions.
+
+        total += labels.size(0)
+        # Counts processed samples.
+
+    train_loss = running_loss / total
+    # Average training loss.
+
+    train_acc = correct / total
+    # Training accuracy.
+
+    model.classifier[6].eval()
+    # Validation mode.
+
+    val_loss = 0
+    val_correct = 0
+    val_total = 0
+
+    with torch.no_grad():
+
+        for features, labels in valid_feature_loader:
+
+            features = features.to(device)
+            labels = labels.to(device)
+
+            outputs = model.classifier[6](features)
+
+            loss = criterion(outputs, labels)
+
+            val_loss += loss.item() * labels.size(0)
+
+            predicted = outputs.argmax(dim=1)
+
+            val_correct += (
+                predicted == labels
+            ).sum().item()
+
+            val_total += labels.size(0)
+
+    val_loss /= val_total
+    # Average validation loss.
+
+    val_acc = val_correct / val_total
+    # Validation accuracy.
+
+    train_losses.append(train_loss)
+    valid_losses.append(val_loss)
+
+    train_accuracies.append(train_acc)
+    valid_accuracies.append(val_acc)
+
+    print(
+        f"Epoch {epoch+1}/{EPOCHS} | "
+        f"Train Loss: {train_loss:.4f} | "
+        f"Train Accuracy: {train_acc:.4f} | "
+        f"Val Loss: {val_loss:.4f} | "
+        f"Val Accuracy: {val_acc:.4f}"
+    )
+    # Displays epoch performance.
+
+    if val_loss < best_val_loss:
+    # Checks for improvement.
+
+        best_val_loss = val_loss
+
+        best_weights = copy.deepcopy(
+            model.classifier[6].state_dict()
+        )
+        # Saves best classifier weights.
+
+        patience_counter = 0
+
+    else:
+        patience_counter += 1
+        # Increment no-improvement  patience_counter >= PATIENCE:
+
+        print("Early Stopping Triggered!")
+        # Stops training if validation loss does not improve.
+
+        break
+
+model.classifier[6].load_state_dict(best_weights)
+# Restores best-performing classifier.
+
+print("\nClassifier Training Completed!")
+
+
+
+# ============================================================
+# CELL 14 : FINE-TUNE LAST VGG16 CONVOLUTION BLOCK
+# ============================================================
+
+for layer_index in [24, 26, 28]:
+# Selects last convolution layers.
+
+    for param in model.features[layer_index].parameters():
+
+        param.requires_grad = True
+        # Allows these layers to be updated.
+
+for param in model.classifier[:6].parameters():
+
+    param.requires_grad = False
+    # Keeps earlier classifier layers frozen.
+
+model.train()
+# Enables training mode.
+
+fine_tune_optimizer = optim.Adam(
+
+    filter(
+        lambda p: p.requires_grad,
+        model.parameters()
+    ),
+
+    lr=0.00001
+)
+# Fine-tuning optimizer.
+# Very small learning rate prevents destroying pretrained knowledge.
+
+images, labels = next(iter(small_loaders["train"]))
+# Loads one training batch.
+
+images = images.to(device)
+labels = labels.to(device)
+
+fine_tune_optimizer.zero_grad()
+# Clears gradients.
+
+outputs = model(images)
+# Full forward pass.
+
+loss = criterion(outputs, labels)
+# Calculates loss.
+
+loss.backward()
+# Computes gradients.
+
+fine_tune_optimizer.step()
+# Updates trainable layers.
+
+print("Last VGG16 convolution block unfrozen!")
+print("Fine-tuning completed on one batch.")
+print("Fine-tuning learning rate: 0.00001")
+
+test_features, test_labels = extract_features(
+    small_loaders["test"]
+)
+# Re-extracts test features using updated model.
+
+print("Updated test features extracted!")
+
+
+
+# ============================================================
+# CELL 15 : TEST MODEL AND PLOT PERFORMANCE
+# ============================================================
+
+model.eval()
+# Testing mode.
+
+correct = 0
+total = 0
+
+with torch.no_grad():
+
+    test_loader = DataLoader(
+        TensorDataset(test_features, test_labels),
+        batch_size=32,
+        shuffle=False
+    )
+    # Creates test DataLoader.
+
+    for features, labels in test_loader:
+
+        features = features.to(device)
+
+        labels = labels.to(device)
+
+        outputs = model.classifierfeatures
+        # Generates predictions.
+
+        predicted = outputs.argmax(dim=1)
+        # Predicted class labels.
+
+        total += labels.size(0)
+        # Counts test samples.
+
+        correct += (
+            predicted == labels
+        ).sum().item()
+        # Counts correct predictions.
+
+test_accuracy = 100 * correct / total
+# Calculates percentage accuracy.
+
+print("Test Images:", total)
+# Total tested images.
+
+print(
+    "Test Accuracy:",
+    round(test_accuracy, 2),
+    "%"
+)
+# Final test accuracy.
+
+plt.figure(figsize=(12, 4))
+# Creates figure window.
+
+plt.subplot(1, 2, 1)
+# First graph location.
+
+plt.plot(train_losses, label="Training Loss")
+# Plots training loss.
+
+plt.plot(valid_losses, label="Validation Loss")
+# Plots validation loss.
+
+plt.title("Training and Validation Loss")
+# Graph title.
+
+plt.xlabel("Epoch")
+# X-axis label.
+
+plt.ylabel("Loss")
+# Y-axis label.
+
+plt.legend()
+# Shows graph legend.
+
+plt.subplot(1, 2, 2)
+# Second graph location.
+
+plt.plot(
+    train_accuracies,
+    label="Training Accuracy"
+)
+# Training accuracy curve.
+
+plt.plot(
+    valid_accuracies,
+    label="Validation Accuracy"
+)
+# Validation accuracy curve.
+
+plt.title("Training and Validation Accuracy")
+# Graph title.
+
+plt.xlabel("Epoch")
+# X-axis label.
+
+plt.ylabel("Accuracy")
+# Y-axis label.
+
+plt.legend()
+# Shows legend.
+
+plt.tight_layout()
+# Adjusts spacing automatically.
+
+plt.show()
+# Displays graphs.
+
+print(
+    "\nVGG16 Transfer Learning Practical Completed!"
+)
+# Final completion message.

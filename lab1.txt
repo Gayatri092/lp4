@@ -1,0 +1,960 @@
+https://chatgpt.com/c/6af7e751-eef4-83ee-89d6-38fa08116e1b
+
+Desktop => new folder Dl_lab => terminal => py -3.11 -m notebook /  python -m notebook  / python3 -m notebook
+python3 -m pip install notebook
+cd ~/Desktop/DL_lab
+python3 -m notebook
+
+
+1. Check installed Python versions
+py --list
+
+
+Tumhare system mein:
+- Python 3.15
+- Python 3.12
+- Python 3.11
+2. Update pip for Python 3.11
+py -3.11 -m pip install --upgrade pip
+
+
+3. Install Jupyter and common libraries
+py -3.11 -m pip install notebook ipykernel numpy==1.23.5 scipy==1.10.1 pandas matplotlib seaborn scikit-learn pillow h5py openpyxl
+
+
+4. Install TensorFlow and Keras
+py -3.11 -m pip install tensorflow==2.15.1 keras==2.15.0
+
+
+5. Install Theano-PyMC
+py -3.11 -m pip install Theano-PyMC==1.1.2
+
+
+6. Install PyTorch
+py -3.11 -m pip install torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cpu
+
+
+7. Register Jupyter kernel
+py -3.11 -m ipykernel install --user --name python311 --display-name "Python 3.11 - All DL Labs"
+
+
+8. Verify all packages
+Theano ke BLAS compatibility workaround ke saath:
+py -3.11 -c "import numpy.distutils.__config__ as c; c.blas_opt_info={}; import tensorflow as tf; import keras; import torch; import theano; import numpy; import pandas; import sklearn; import scipy; import matplotlib; import seaborn; import PIL; print('TensorFlow:',tf.__version__); print('Keras:',keras.__version__); print('PyTorch:',torch.__version__); print('Theano:',theano.__version__); print('NumPy:',numpy.__version__); print('ALL IMPORTS SUCCESSFUL')"
+
+
+9. Launch Jupyter Notebook
+Pehle apne lab folder mein jao:
+cd "C:\Users\GayatriMahajan\Documents\Gayatri\BE SPPU\SEM 7\DL\labs"
+
+
+Then:
+py -3.11 -m notebook
+
+validation import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+import numpy.distutils.__config__ as numpy_config
+numpy_config.blas_opt_info = {}
+
+import tensorflow as tf
+import keras
+import torch
+import theano
+import theano.tensor as T
+
+import numpy as np
+import pandas as pd
+import scipy
+import sklearn
+import matplotlib.pyplot as plt
+import seaborn as sns
+from PIL import Image
+
+print("All libraries imported successfully!")
+
+# ============================================================
+# ASSIGNMENT 1
+# STUDY OF DEEP LEARNING PACKAGES
+# TensorFlow, Keras, Theano and PyTorch
+# ============================================================
+
+# AIM:
+# To study different deep learning packages such as TensorFlow,
+# Keras, Theano and PyTorch and understand their distinct
+# features and functionalities by executing test programs.
+
+
+# ============================================================
+# CELL 1: CHECK PYTHON VERSION
+# ============================================================
+# PURPOSE:
+# Check the installed Python version and the Python interpreter
+# being used by the Jupyter Notebook.
+
+import sys
+
+print("Python Version:", sys.version)
+print("Python Executable:", sys.executable)
+
+
+# ============================================================
+# CELL 2: INSTALL REQUIRED PACKAGES
+# ============================================================
+# PURPOSE:
+# Install the libraries required for this practical.
+#
+# Run this cell only if the packages are not already installed.
+# %pip installs packages into the current Jupyter environment.
+#
+# TensorFlow: Deep learning framework
+# Keras: High-level deep learning API
+# PyTorch: Deep learning framework
+# Matplotlib: Used for displaying images and graphs
+# NumPy: Used for numerical operations
+
+%pip install tensorflow keras torch matplotlib numpy
+
+
+# ============================================================
+# CELL 3: IMPORT LIBRARIES AND CHECK VERSIONS
+# ============================================================
+# PURPOSE:
+# Import the required packages and verify their installation
+# by displaying their installed versions.
+
+import tensorflow as tf
+import keras
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+
+print("\n----- PACKAGE VERSIONS -----")
+
+print("TensorFlow Version:", tf.__version__)
+print("Keras Version:", keras.__version__)
+print("PyTorch Version:", torch.__version__)
+print("NumPy Version:", np.__version__)
+
+
+# ============================================================
+# PART A: TENSORFLOW IMPLEMENTATION
+# ============================================================
+# INTRODUCTION:
+# TensorFlow is an open-source deep learning framework
+# developed by Google. It is used for numerical computation
+# and building, training and deploying machine learning models.
+#
+# FEATURES:
+# 1. Supports CPU and GPU computation.
+# 2. Provides automatic differentiation.
+# 3. Supports neural network development.
+# 4. Supports large-scale machine learning.
+# 5. Provides model training and deployment tools.
+#
+# FUNCTIONALITY:
+# Used to create tensors and perform mathematical operations
+# and develop deep learning models.
+
+
+# CELL 4: TENSORFLOW TEST PROGRAM
+
+print("\n========== TENSORFLOW ==========")
+
+# Display TensorFlow version
+print("TensorFlow Version:", tf.__version__)
+
+# Create a 3x3 random tensor
+x = tf.random.normal([3, 3])
+
+# Display the generated tensor
+print("\nRandom Tensor:")
+print(x)
+
+# Calculate the sum of all tensor elements
+result = tf.reduce_sum(x)
+
+# Display the result
+print("\nSum of Tensor Elements:", result.numpy())
+
+
+# ============================================================
+# PART B: KERAS IMPLEMENTATION
+# ============================================================
+# INTRODUCTION:
+# Keras is a high-level deep learning API that simplifies
+# neural network development.
+#
+# FEATURES:
+# 1. Simple and user-friendly API.
+# 2. Supports Sequential and Functional models.
+# 3. Provides predefined neural network layers.
+# 4. Supports optimizers and loss functions.
+# 5. Integrates with TensorFlow.
+#
+# FUNCTIONALITY:
+# Used to create, train and evaluate neural networks.
+
+
+# CELL 5: KERAS TEST PROGRAM USING MNIST DATASET
+
+print("\n========== KERAS ==========")
+
+# Display Keras version
+print("Keras Version:", keras.__version__)
+
+# Load MNIST handwritten digit dataset
+# It contains 60,000 training images and 10,000 testing images.
+
+(train_images, train_labels), (test_images, test_labels) = \
+    keras.datasets.mnist.load_data()
+
+# Display the shape of training and testing datasets
+print("\nTraining Images Shape:", train_images.shape)
+print("Training Labels Shape:", train_labels.shape)
+
+print("Testing Images Shape:", test_images.shape)
+print("Testing Labels Shape:", test_labels.shape)
+
+# Display one image from the training dataset
+plt.imshow(train_images[0], cmap='gray')
+
+# Set image title
+plt.title("MNIST Handwritten Digit")
+
+# Hide axis values
+plt.axis('off')
+
+# Display image
+plt.show()
+
+
+# ============================================================
+# PART C: THEANO IMPLEMENTATION
+# ============================================================
+# INTRODUCTION:
+# Theano is an open-source Python library used for numerical
+# computation and symbolic mathematical expressions.
+#
+# The original Theano project is discontinued.
+#
+# FEATURES:
+# 1. Supports symbolic mathematical expressions.
+# 2. Provides automatic differentiation.
+# 3. Optimizes mathematical expressions.
+# 4. Supports efficient numerical computations.
+# 5. Historically supported GPU acceleration.
+#
+# FUNCTIONALITY:
+# Used for symbolic mathematical computation and
+# computational graph operations.
+
+
+# CELL 6: THEANO TEST PROGRAM
+#
+# IMPORTANT:
+# This section requires a compatible Theano installation.
+# Original Theano may not work with Python 3.13.
+# If Theano is unavailable, this cell will report the error
+# and allow the remaining notebook to continue.
+
+print("\n========== THEANO ==========")
+
+try:
+    import theano
+    import theano.tensor as T
+    from theano import function
+
+    # Display Theano version
+    print("Theano Version:", theano.__version__)
+
+    # Declare two symbolic scalar variables
+    x = T.dscalar('x')
+    y = T.dscalar('y')
+
+    # Define addition operation
+    z = x + y
+
+    # Compile symbolic expression into a function
+    f = function([x, y], z)
+
+    # Execute the function with values 5 and 7
+    result = f(5, 7)
+
+    # Display result
+    print("Addition Result:", result)
+
+except Exception as e:
+    print("Theano could not be executed.")
+    print("Reason:", str(e))
+    print("Use a separate compatible legacy Python environment.")
+
+
+# ============================================================
+# PART D: PYTORCH IMPLEMENTATION
+# ============================================================
+# INTRODUCTION:
+# PyTorch is an open-source deep learning framework
+# developed by Meta.
+#
+# FEATURES:
+# 1. Supports dynamic computational graphs.
+# 2. Provides automatic differentiation.
+# 3. Supports GPU acceleration.
+# 4. Provides neural network modules.
+# 5. Supports CNN, RNN and other neural networks.
+#
+# FUNCTIONALITY:
+# Used to create tensors and build and train deep learning
+# models.
+
+
+# CELL 7: PYTORCH TEST PROGRAM
+
+print("\n========== PYTORCH ==========")
+
+# Display PyTorch version
+print("PyTorch Version:", torch.__version__)
+
+# Create first tensor
+a = torch.tensor([1, 2, 3])
+
+# Create second tensor
+b = torch.tensor([4, 5, 6])
+
+# Perform element-wise addition
+c = a + b
+
+# Display tensors and addition result
+print("\nTensor A:", a)
+print("Tensor B:", b)
+print("Addition Result:", c)
+
+# Perform element-wise multiplication
+d = a * b
+
+# Display multiplication result
+print("Multiplication Result:", d)
+
+
+
+# ============================================================
+# CELL 8: DETAILED COMPARISON OF DEEP LEARNING PACKAGES
+# ============================================================
+
+packages = {
+    "TensorFlow": {
+        "Developer": "Google",
+        "Type": "Deep Learning Framework",
+        "Features": [
+            "Supports CPU and GPU computation",
+            "Provides automatic differentiation",
+            "Supports large-scale machine learning",
+            "Supports model training and deployment"
+        ],
+        "Functionality": "Used to build, train and deploy deep learning models."
+    },
+
+    "Keras": {
+        "Developer": "Francois Chollet",
+        "Type": "High-Level Deep Learning API",
+        "Features": [
+            "Simple and user-friendly API",
+            "Supports Sequential and Functional models",
+            "Provides predefined neural network layers",
+            "Supports optimizers and loss functions"
+        ],
+        "Functionality": "Used to create, train and evaluate neural networks."
+    },
+
+    "Theano": {
+        "Developer": "University of Montreal",
+        "Type": "Numerical Computation Library",
+        "Features": [
+            "Supports symbolic mathematical expressions",
+            "Provides automatic differentiation",
+            "Optimizes mathematical expressions",
+            "Supports CPU and historically GPU computation"
+        ],
+        "Functionality": "Used for symbolic mathematical computations and tensor operations."
+    },
+
+    "PyTorch": {
+        "Developer": "Meta (originally Facebook)",
+        "Type": "Deep Learning Framework",
+        "Features": [
+            "Supports dynamic computational graphs",
+            "Provides automatic differentiation",
+            "Supports GPU acceleration",
+            "Provides neural network modules"
+        ],
+        "Functionality": "Used to build and train neural networks such as CNNs and RNNs."
+    }
+}
+
+print("\n========== DETAILED PACKAGE COMPARISON ==========")
+
+for name, details in packages.items():
+
+    print("\nPackage:", name)
+    print("Developer:", details["Developer"])
+    print("Type:", details["Type"])
+
+    print("Distinct Features:")
+    for feature in details["Features"]:
+        print("-", feature)
+
+    print("Functionality:", details["Functionality"])
+
+    print("----------------------------------------")
+
+# ============================================================
+# CELL 9: FINAL PACKAGE VERIFICATION
+# ============================================================
+# PURPOSE:
+# Perform simple mathematical operations to check whether
+# TensorFlow, Keras and PyTorch are working.
+
+print("\n========== FINAL VERIFICATION ==========")
+
+# TensorFlow verification
+tf_result = tf.reduce_sum([1, 2, 3]).numpy()
+print("TensorFlow Working:", tf_result == 6)
+
+# Keras verification
+print("Keras Working:", keras.__version__ is not None)
+
+# PyTorch verification
+torch_result = torch.sum(torch.tensor([1, 2, 3])).item()
+print("PyTorch Working:", torch_result == 6)
+
+
+# ============================================================
+# CONCLUSION
+# ============================================================
+# Thus, we studied four deep learning packages:
+# TensorFlow, Keras, Theano and PyTorch.
+# We verified their installation, executed basic test
+# programs and understood their distinct features and
+# functionalities. We also performed tensor operations
+# and loaded the MNIST dataset using Keras.
+
+
+# ============================================================
+# ASSIGNMENT 1: STUDY OF DEEP LEARNING PACKAGES
+# TensorFlow, Keras, Theano and PyTorch
+# ============================================================
+
+# AIM:
+# To study different deep learning packages and understand
+# their features and functionalities by executing test programs.
+
+
+# ============================================================
+# INITIAL SETUP: IMPORT REQUIRED LIBRARIES
+# ============================================================
+
+# Import warnings module to control warning messages
+import warnings
+
+# Ignore deprecation warnings to keep output clean
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+# Import NumPy configuration for Theano compatibility
+import numpy.distutils.__config__ as numpy_config
+
+# Set BLAS information to an empty dictionary
+# This is a compatibility workaround required by our Theano setup
+numpy_config.blas_opt_info = {}
+
+# Import TensorFlow deep learning framework
+import tensorflow as tf
+
+# Import Keras high-level deep learning API
+import keras
+
+# Import PyTorch deep learning framework
+import torch
+
+# Import Theano library for symbolic mathematical computation
+import theano
+
+# Import tensor module from Theano
+import theano.tensor as T
+
+# Import NumPy for numerical and array operations
+import numpy as np
+
+# Import Pandas for data handling
+import pandas as pd
+
+# Import SciPy for scientific computations
+import scipy
+
+# Import Scikit-learn for machine learning tools
+import sklearn
+
+# Import Matplotlib for displaying images and graphs
+import matplotlib.pyplot as plt
+
+# Import Seaborn for statistical data visualization
+import seaborn as sns
+
+# Import Image class from PIL for image processing
+from PIL import Image
+
+# Display confirmation message
+print("All libraries imported successfully!")
+
+
+# ============================================================
+# CELL 1: CHECK PYTHON VERSION
+# ============================================================
+
+# Import sys module to access Python interpreter information
+import sys
+
+# Display the Python version currently being used
+print("Python Version:", sys.version)
+
+# Display the location of the Python interpreter
+print("Python Executable:", sys.executable)
+
+
+# ============================================================
+# CELL 2: INSTALL REQUIRED PACKAGES
+# ============================================================
+
+# Install the required libraries in the current Jupyter environment
+# Run this command only if the packages are not already installed
+# %pip installs packages into the current Jupyter kernel
+
+# %pip install tensorflow keras torch matplotlib numpy
+
+
+# ============================================================
+# CELL 3: IMPORT LIBRARIES AND CHECK VERSIONS
+# ============================================================
+
+# Import TensorFlow library
+import tensorflow as tf
+
+# Import Keras library
+import keras
+
+# Import PyTorch library
+import torch
+
+# Import NumPy library
+import numpy as np
+
+# Import Matplotlib plotting module
+import matplotlib.pyplot as plt
+
+# Print heading for package versions
+print("\n----- PACKAGE VERSIONS -----")
+
+# Display installed TensorFlow version
+print("TensorFlow Version:", tf.__version__)
+
+# Display installed Keras version
+print("Keras Version:", keras.__version__)
+
+# Display installed PyTorch version
+print("PyTorch Version:", torch.__version__)
+
+# Display installed NumPy version
+print("NumPy Version:", np.__version__)
+
+
+# ============================================================
+# PART A: TENSORFLOW IMPLEMENTATION
+# ============================================================
+
+# INTRODUCTION:
+# TensorFlow is an open-source deep learning framework
+# developed by Google. It is used for numerical computation
+# and building, training and deploying machine learning models.
+
+# FEATURES:
+# 1. Supports CPU and GPU computation.
+# 2. Provides automatic differentiation.
+# 3. Supports neural network development.
+# 4. Supports large-scale machine learning.
+# 5. Provides model training and deployment tools.
+
+# FUNCTIONALITY:
+# Used to create tensors, perform mathematical operations
+# and develop deep learning models.
+
+
+# ============================================================
+# CELL 4: TENSORFLOW TEST PROGRAM
+# ============================================================
+
+# Display TensorFlow section heading
+print("\n========== TENSORFLOW ==========")
+
+# Display installed TensorFlow version
+print("TensorFlow Version:", tf.__version__)
+
+# Create a 3x3 tensor containing random numbers
+# tf.random.normal generates values from a normal distribution
+x = tf.random.normal([3, 3])
+
+# Display the generated tensor
+print("\nRandom Tensor:")
+print(x)
+
+# Calculate the sum of all elements in the tensor
+# tf.reduce_sum adds all tensor elements together
+result = tf.reduce_sum(x)
+
+# Convert the TensorFlow result into a NumPy value and display it
+print("\nSum of Tensor Elements:", result.numpy())
+
+
+# ============================================================
+# PART B: KERAS IMPLEMENTATION
+# ============================================================
+
+# INTRODUCTION:
+# Keras is a high-level deep learning API that simplifies
+# neural network development.
+
+# FEATURES:
+# 1. Simple and user-friendly API.
+# 2. Supports Sequential and Functional models.
+# 3. Provides predefined neural network layers.
+# 4. Supports optimizers and loss functions.
+# 5. Integrates with TensorFlow.
+
+# FUNCTIONALITY:
+# Used to create, train and evaluate neural networks.
+
+
+# ============================================================
+# CELL 5: KERAS TEST PROGRAM USING MNIST DATASET
+# ============================================================
+
+# Display Keras section heading
+print("\n========== KERAS ==========")
+
+# Display installed Keras version
+print("Keras Version:", keras.__version__)
+
+# Load MNIST handwritten digit dataset
+# It contains 60,000 training images and 10,000 testing images
+# Each image is a grayscale image of size 28x28 pixels
+(train_images, train_labels), (test_images, test_labels) = \
+    keras.datasets.mnist.load_data()
+
+# Display the shape of training images
+print("\nTraining Images Shape:", train_images.shape)
+
+# Display the shape of training labels
+print("Training Labels Shape:", train_labels.shape)
+
+# Display the shape of testing images
+print("Testing Images Shape:", test_images.shape)
+
+# Display the shape of testing labels
+print("Testing Labels Shape:", test_labels.shape)
+
+# Display the first image from the training dataset
+# cmap='gray' displays the image in grayscale
+plt.imshow(train_images[0], cmap='gray')
+
+# Set the title of the displayed image
+plt.title("MNIST Handwritten Digit")
+
+# Hide x-axis and y-axis values
+plt.axis('off')
+
+# Display the image
+plt.show()
+
+
+# ============================================================
+# PART C: THEANO IMPLEMENTATION
+# ============================================================
+
+# INTRODUCTION:
+# Theano is an open-source Python library used for numerical
+# computation and symbolic mathematical expressions.
+# The original Theano project is discontinued.
+
+# FEATURES:
+# 1. Supports symbolic mathematical expressions.
+# 2. Provides automatic differentiation.
+# 3. Optimizes mathematical expressions.
+# 4. Supports efficient numerical computations.
+# 5. Historically supported GPU acceleration.
+
+# FUNCTIONALITY:
+# Used for symbolic mathematical computation and
+# computational graph operations.
+
+
+# ============================================================
+# CELL 6: THEANO TEST PROGRAM
+# ============================================================
+
+# Display Theano section heading
+print("\n========== THEANO ==========")
+
+# Use try block to handle possible Theano errors
+try:
+
+    # Import Theano library
+    import theano
+
+    # Import tensor module from Theano
+    import theano.tensor as T
+
+    # Import function to compile symbolic expressions
+    from theano import function
+
+    # Display installed Theano version
+    print("Theano Version:", theano.__version__)
+
+    # Declare first symbolic double-precision scalar variable
+    x = T.dscalar('x')
+
+    # Declare second symbolic double-precision scalar variable
+    y = T.dscalar('y')
+
+    # Define symbolic addition operation
+    z = x + y
+
+    # Compile the symbolic expression into an executable function
+    # Inputs are x and y, and output is z
+    f = function([x, y], z)
+
+    # Execute the compiled function using values 5 and 7
+    result = f(5, 7)
+
+    # Display the addition result
+    print("Addition Result:", result)
+
+# Execute this block if an error occurs in the try block
+except Exception as e:
+
+    # Display an error message
+    print("Theano could not be executed.")
+
+    # Display the actual reason for the error
+    print("Reason:", str(e))
+
+    # Suggest using a compatible Python environment
+    print("Use a separate compatible legacy Python environment.")
+
+
+# ============================================================
+# PART D: PYTORCH IMPLEMENTATION
+# ============================================================
+
+# INTRODUCTION:
+# PyTorch is an open-source deep learning framework
+# developed by Meta (originally Facebook).
+
+# FEATURES:
+# 1. Supports dynamic computational graphs.
+# 2. Provides automatic differentiation.
+# 3. Supports GPU acceleration.
+# 4. Provides neural network modules.
+# 5. Supports CNN, RNN and other neural networks.
+
+# FUNCTIONALITY:
+# Used to create tensors and build and train deep learning models.
+
+
+# ============================================================
+# CELL 7: PYTORCH TEST PROGRAM
+# ============================================================
+
+# Display PyTorch section heading
+print("\n========== PYTORCH ==========")
+
+# Display installed PyTorch version
+print("PyTorch Version:", torch.__version__)
+
+# Create the first tensor containing three elements
+a = torch.tensor([1, 2, 3])
+
+# Create the second tensor containing three elements
+b = torch.tensor([4, 5, 6])
+
+# Perform element-wise addition of both tensors
+c = a + b
+
+# Display the first tensor
+print("\nTensor A:", a)
+
+# Display the second tensor
+print("Tensor B:", b)
+
+# Display the addition result
+print("Addition Result:", c)
+
+# Perform element-wise multiplication of both tensors
+d = a * b
+
+# Display the multiplication result
+print("Multiplication Result:", d)
+
+
+# ============================================================
+# CELL 8: DETAILED COMPARISON OF DEEP LEARNING PACKAGES
+# ============================================================
+
+# Create a dictionary to store information about all four packages
+packages = {
+
+    # Store TensorFlow information
+    "TensorFlow": {
+        "Developer": "Google",
+        "Type": "Deep Learning Framework",
+
+        # Store TensorFlow features in a list
+        "Features": [
+            "Supports CPU and GPU computation",
+            "Provides automatic differentiation",
+            "Supports large-scale machine learning",
+            "Supports model training and deployment"
+        ],
+
+        # Store the main functionality of TensorFlow
+        "Functionality": "Used to build, train and deploy deep learning models."
+    },
+
+    # Store Keras information
+    "Keras": {
+        "Developer": "Francois Chollet",
+        "Type": "High-Level Deep Learning API",
+
+        # Store Keras features
+        "Features": [
+            "Simple and user-friendly API",
+            "Supports Sequential and Functional models",
+            "Provides predefined neural network layers",
+            "Supports optimizers and loss functions"
+        ],
+
+        # Store the main functionality of Keras
+        "Functionality": "Used to create, train and evaluate neural networks."
+    },
+
+    # Store Theano information
+    "Theano": {
+        "Developer": "University of Montreal",
+        "Type": "Numerical Computation Library",
+
+        # Store Theano features
+        "Features": [
+            "Supports symbolic mathematical expressions",
+            "Provides automatic differentiation",
+            "Optimizes mathematical expressions",
+            "Supports CPU and historically GPU computation"
+        ],
+
+        # Store the main functionality of Theano
+        "Functionality": "Used for symbolic mathematical computations and tensor operations."
+    },
+
+    # Store PyTorch information
+    "PyTorch": {
+        "Developer": "Meta (originally Facebook)",
+        "Type": "Deep Learning Framework",
+
+        # Store PyTorch features
+        "Features": [
+            "Supports dynamic computational graphs",
+            "Provides automatic differentiation",
+            "Supports GPU acceleration",
+            "Provides neural network modules"
+        ],
+
+        # Store the main functionality of PyTorch
+        "Functionality": "Used to build and train neural networks such as CNNs and RNNs."
+    }
+}
+
+# Print comparison section heading
+print("\n========== DETAILED PACKAGE COMPARISON ==========")
+
+# Loop through each package and its details in the dictionary
+for name, details in packages.items():
+
+    # Display package name
+    print("\nPackage:", name)
+
+    # Display developer name
+    print("Developer:", details["Developer"])
+
+    # Display package type
+    print("Type:", details["Type"])
+
+    # Display heading for package features
+    print("Distinct Features:")
+
+    # Loop through each feature of the current package
+    for feature in details["Features"]:
+
+        # Display each feature
+        print("-", feature)
+
+    # Display package functionality
+    print("Functionality:", details["Functionality"])
+
+    # Print separator line after each package
+    print("----------------------------------------")
+
+
+# ============================================================
+# CELL 9: FINAL PACKAGE VERIFICATION
+# ============================================================
+
+# Display final verification heading
+print("\n========== FINAL VERIFICATION ==========")
+
+# Perform addition of 1, 2 and 3 using TensorFlow
+tf_result = tf.reduce_sum([1, 2, 3]).numpy()
+
+# Check whether TensorFlow result is equal to 6
+# Display True if the condition is satisfied
+print("TensorFlow Working:", tf_result == 6)
+
+# Verify that Keras version information is available
+print("Keras Working:", keras.__version__ is not None)
+
+# Create a PyTorch tensor and calculate its sum
+torch_result = torch.sum(torch.tensor([1, 2, 3])).item()
+
+# Check whether PyTorch result is equal to 6
+# Display True if the condition is satisfied
+print("PyTorch Working:", torch_result == 6)
+
+
+# ============================================================
+# CONCLUSION
+# ============================================================
+
+# Display the conclusion of Assignment 1
+print("\nThus, we studied four deep learning packages:")
+
+# Display the names of all four packages
+print("TensorFlow, Keras, Theano and PyTorch.")
+
+# State that package installation and test programs were verified
+print("We verified their installation and executed basic test programs.")
+
+# State that we studied their features and functionalities
+print("We understood their distinct features and functionalities.")
+
+# State that we performed tensor operations
+print("We also performed tensor operations.")
+
+# State that MNIST dataset was loaded using Keras
+print("We loaded the MNIST dataset using Keras.")
+

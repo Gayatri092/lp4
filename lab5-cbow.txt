@@ -1,0 +1,875 @@
+https://chatgpt.com/c/6af7e751-eef4-83ee-89d6-38fa08116e1b
+
+Desktop => new folder Dl_lab => terminal => py -3.11 -m notebook /  python -m notebook  / python3 -m notebook
+python3 -m pip install notebook
+cd ~/Desktop/DL_lab
+python3 -m notebook
+
+1. Check installed Python versions
+py --list
+
+
+Tumhare system mein:
+- Python 3.15
+- Python 3.12
+- Python 3.11
+2. Update pip for Python 3.11
+py -3.11 -m pip install --upgrade pip
+
+
+3. Install Jupyter and common libraries
+py -3.11 -m pip install notebook ipykernel numpy==1.23.5 scipy==1.10.1 pandas matplotlib seaborn scikit-learn pillow h5py openpyxl
+
+
+4. Install TensorFlow and Keras
+py -3.11 -m pip install tensorflow==2.15.1 keras==2.15.0
+
+
+5. Install Theano-PyMC
+py -3.11 -m pip install Theano-PyMC==1.1.2
+
+
+6. Install PyTorch
+py -3.11 -m pip install torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cpu
+
+
+7. Register Jupyter kernel
+py -3.11 -m ipykernel install --user --name python311 --display-name "Python 3.11 - All DL Labs"
+
+
+8. Verify all packages
+Theano ke BLAS compatibility workaround ke saath:
+py -3.11 -c "import numpy.distutils.__config__ as c; c.blas_opt_info={}; import tensorflow as tf; import keras; import torch; import theano; import numpy; import pandas; import sklearn; import scipy; import matplotlib; import seaborn; import PIL; print('TensorFlow:',tf.__version__); print('Keras:',keras.__version__); print('PyTorch:',torch.__version__); print('Theano:',theano.__version__); print('NumPy:',numpy.__version__); print('ALL IMPORTS SUCCESSFUL')"
+
+
+9. Launch Jupyter Notebook
+Pehle apne lab folder mein jao:
+cd "C:\Users\GayatriMahajan\Documents\Gayatri\BE SPPU\SEM 7\DL\labs"
+
+
+Then:
+py -3.11 -m notebook
+
+validation import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+import numpy.distutils.__config__ as numpy_config
+numpy_config.blas_opt_info = {}
+
+import tensorflow as tf
+import keras
+import torch
+import theano
+import theano.tensor as T
+
+import numpy as np
+import pandas as pd
+import scipy
+import sklearn
+import matplotlib.pyplot as plt
+import seaborn as sns
+from PIL import Image
+
+print("All libraries imported successfully!")
+
+# ============================================================
+# CELL 1: INSTALL REQUIRED LIBRARIES
+# ============================================================
+
+%pip install tensorflow numpy matplotlib
+
+
+# ============================================================
+# CELL 2: IMPORT REQUIRED LIBRARIES
+# ============================================================
+
+import numpy as np
+import tensorflow as tf
+import re
+import matplotlib.pyplot as plt
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Input, Embedding, GlobalAveragePooling1D, Dense
+
+print("TensorFlow Version:", tf.__version__)
+
+
+# ============================================================
+# CELL 3: DATA PREPARATION
+# ============================================================
+
+# Text corpus used as the dataset for CBOW
+
+corpus = """
+Deep learning is a part of machine learning.
+It uses neural networks to learn patterns from data.
+Deep learning models are useful in image recognition,
+natural language processing and speech recognition.
+Neural networks consist of multiple layers.
+These layers learn complex features from input data.
+Deep learning has achieved remarkable results in
+many applications and sometimes surpasses human
+expert performance.
+"""
+
+print("Original Text Corpus:")
+print(corpus)
+
+
+# ============================================================
+# CELL 4: TEXT PREPROCESSING AND TOKENIZATION
+# ============================================================
+
+# Convert text into lowercase and tokenize into words
+
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts([corpus])
+
+# Create word-to-index dictionary
+
+word_to_index = tokenizer.word_index
+
+# Create index-to-word dictionary
+
+index_to_word = {
+    index: word for word, index in word_to_index.items()
+}
+
+vocab_size = len(word_to_index) + 1
+
+print("Word to Index Mapping:")
+print(word_to_index)
+
+print("\nVocabulary Size:", vocab_size)
+
+
+# ============================================================
+# CELL 5: GENERATE CBOW TRAINING DATA
+# ============================================================
+
+# Context size = 2 means:
+# 2 words before and 2 words after the target word
+
+# Context size = 2
+# Two words before and two words after target word
+
+context_size = 2
+
+# Split corpus into individual sentences
+sentence_texts = re.split(r'[.!?]+', corpus.lower())
+
+# Convert each sentence into word indexes
+sentence_sequences = tokenizer.texts_to_sequences(sentence_texts)
+
+contexts = []
+targets = []
+
+# Generate CBOW context-target pairs sentence by sentence
+for sentence in sentence_sequences:
+
+    for i in range(context_size, len(sentence) - context_size):
+
+        # Select two words before and two words after
+        context = (
+            sentence[i - context_size:i]
+            + sentence[i + 1:i + context_size + 1]
+        )
+
+        # Current middle word is the target
+        target = sentence[i]
+
+        contexts.append(context)
+        targets.append(target)
+
+# Convert into NumPy arrays
+X = np.array(contexts)
+Y = np.array(targets)
+
+print("Training Data Generated Successfully!")
+
+print("\nInput Shape:", X.shape)
+print("Output Shape:", Y.shape)
+
+print("\nFirst Five Training Examples:")
+
+for i in range(min(5, len(X))):
+
+    context_words = [
+        index_to_word[index] for index in X[i]
+    ]
+
+    target_word = index_to_word[Y[i]]
+
+    print("Context:", context_words, "Target:", target_word)
+
+
+# ============================================================
+# CELL 6: DEFINE CBOW MODEL ARCHITECTURE
+# ============================================================
+
+embedding_size = 10
+
+model = Sequential([
+
+    # Input contains four context words
+
+    Input(shape=(context_size * 2,)),
+
+    # Convert word indexes into embedding vectors
+
+    Embedding(
+        input_dim=vocab_size,
+        output_dim=embedding_size
+    ),
+
+    # Average the context word embeddings
+
+    GlobalAveragePooling1D(),
+
+    # Hidden layers
+
+    Dense(256, activation='relu'),
+
+    Dense(512, activation='relu'),
+
+    # Predict probability of each vocabulary word
+
+    Dense(vocab_size, activation='softmax')
+])
+
+model.summary()
+
+
+# ============================================================
+# CELL 7: COMPILE THE MODEL
+# ============================================================
+
+model.compile(
+
+    optimizer='adam',
+
+    loss='sparse_categorical_crossentropy',
+
+    metrics=['accuracy']
+)
+
+print("CBOW Model Compiled Successfully!")
+
+
+# ============================================================
+# CELL 8: TRAIN THE CBOW MODEL
+# ============================================================
+
+history = model.fit(
+
+    X,
+    Y,
+
+    epochs=80,
+
+    batch_size=32,
+
+    verbose=1
+)
+
+print("CBOW Model Training Completed!")
+
+
+# ============================================================
+# CELL 9: PLOT TRAINING LOSS
+# ============================================================
+
+plt.figure(figsize=(8, 5))
+
+plt.plot(history.history['loss'])
+
+plt.title("CBOW Model Training Loss")
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+
+plt.grid(True)
+plt.show()
+
+
+# ============================================================
+# CELL 10: PLOT TRAINING ACCURACY
+# ============================================================
+
+plt.figure(figsize=(8, 5))
+
+plt.plot(history.history['accuracy'])
+
+plt.title("CBOW Model Training Accuracy")
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+
+plt.grid(True)
+plt.show()
+
+
+# ============================================================
+# CELL 11: TEST THE TRAINED CBOW MODEL
+# ============================================================
+
+# Each test phrase must contain:
+# 2 context words before the missing word
+# 2 context words after the missing word
+
+# Each context contains:
+# 2 words before the missing target
+# 2 words after the missing target
+
+test_contexts = [
+    ("deep learning a part", "is"),
+    ("learning is part of", "a"),
+    ("is a of machine", "part"),
+    ("it uses networks to", "neural"),
+    ("useful in recognition natural", "image"),
+    ("learning has remarkable results", "achieved")
+]
+
+print("CBOW MODEL PREDICTIONS")
+print("-" * 60)
+
+for context_text, expected_word in test_contexts:
+
+    words = context_text.lower().split()
+
+    context_sequence = [
+        tokenizer.word_index[word]
+        for word in words
+    ]
+
+    context_array = np.array([context_sequence])
+
+    prediction = model.predict(context_array, verbose=0)
+
+    predicted_index = np.argmax(prediction, axis=1)[0]
+
+    predicted_word = tokenizer.index_word.get(
+        predicted_index, "Unknown"
+    )
+
+    status = "CORRECT" if predicted_word == expected_word else "MISMATCH"
+
+    print("\nContext:", context_text)
+    print("Expected:", expected_word)
+    print("Predicted:", predicted_word)
+    print("Status:", status)
+
+print("\nPrediction Testing Completed!")
+
+
+# ============================================================
+# CELL 12: FINAL RESULT
+# ============================================================
+
+print("CBOW Implementation Completed Successfully!")
+
+============================================================================================
+
+
+
+# ============================================================
+# ASSIGNMENT 5
+# WORD EMBEDDINGS USING CBOW MODEL
+# ============================================================
+
+# AIM:
+# To implement the Continuous Bag of Words (CBOW) model
+# for learning word embeddings from a text corpus.
+# The model predicts a target word using its surrounding
+# context words.
+
+
+# ============================================================
+# CELL 1: INSTALL REQUIRED LIBRARIES
+# ============================================================
+
+# PURPOSE:
+# Install TensorFlow, NumPy and Matplotlib.
+#
+# TensorFlow is used to build and train the CBOW model.
+# NumPy is used for numerical and array operations.
+# Matplotlib is used to display training graphs.
+
+# Install packages only if they are not already installed
+# %pip installs packages into the current Jupyter environment
+
+# %pip install tensorflow numpy matplotlib
+
+
+# ============================================================
+# CELL 2: IMPORT REQUIRED LIBRARIES
+# ============================================================
+
+# PURPOSE:
+# Import all libraries required for CBOW implementation.
+
+# Import NumPy for numerical operations and arrays
+import numpy as np
+
+# Import TensorFlow deep learning framework
+import tensorflow as tf
+
+# Import re module for text preprocessing and sentence splitting
+import re
+
+# Import Matplotlib for displaying graphs
+import matplotlib.pyplot as plt
+
+# Import Tokenizer to convert words into numerical indexes
+from tensorflow.keras.preprocessing.text import Tokenizer
+
+# Import Sequential API to create the CBOW neural network
+from tensorflow.keras.models import Sequential
+
+# Import required layers for building the CBOW model
+from tensorflow.keras.layers import (
+    Input,                       # Defines model input dimensions
+    Embedding,                   # Converts word indexes into vectors
+    GlobalAveragePooling1D,      # Averages context word embeddings
+    Dense                        # Creates fully connected neural network layers
+)
+
+# Display installed TensorFlow version
+print("TensorFlow Version:", tf.__version__)
+
+
+# ============================================================
+# CELL 3: DATA PREPARATION
+# ============================================================
+
+# PURPOSE:
+# Create a text corpus that will be used as the dataset.
+#
+# A corpus is a collection of text or sentences
+# used for training a Natural Language Processing model.
+
+# Define a custom text corpus containing sentences about deep learning
+corpus = """
+Deep learning is a part of machine learning.
+It uses neural networks to learn patterns from data.
+Deep learning models are useful in image recognition,
+natural language processing and speech recognition.
+Neural networks consist of multiple layers.
+These layers learn complex features from input data.
+Deep learning has achieved remarkable results in
+many applications and sometimes surpasses human
+expert performance.
+"""
+
+# Display the original text corpus
+print("Original Text Corpus:")
+print(corpus)
+
+
+# ============================================================
+# CELL 4: TEXT PREPROCESSING AND TOKENIZATION
+# ============================================================
+
+# PURPOSE:
+# Convert text into lowercase and tokenize it into words.
+#
+# Tokenization means splitting text into individual words.
+# Each unique word is assigned a numerical index.
+
+# Create Tokenizer object to process text
+tokenizer = Tokenizer()
+
+# Learn the vocabulary and assign indexes to words
+# The tokenizer also converts text into lowercase by default
+tokenizer.fit_on_texts([corpus])
+
+# Create word-to-index dictionary
+# Each word is mapped to a unique integer
+word_to_index = tokenizer.word_index
+
+# Create index-to-word dictionary
+# Each numerical index is mapped back to its word
+index_to_word = {
+    index: word for word, index in word_to_index.items()
+}
+
+# Calculate vocabulary size
+# Add 1 because index 0 is reserved for padding
+vocab_size = len(word_to_index) + 1
+
+# Display word-to-index mapping
+print("Word to Index Mapping:")
+print(word_to_index)
+
+# Display total vocabulary size
+print("\nVocabulary Size:", vocab_size)
+
+
+# ============================================================
+# CELL 5: GENERATE CBOW TRAINING DATA
+# ============================================================
+
+# PURPOSE:
+# Generate context-target word pairs for CBOW training.
+#
+# Context size = 2 means:
+# 2 words before and 2 words after the target word.
+#
+# CBOW uses surrounding context words to predict
+# the missing or target word.
+
+# Define context size
+context_size = 2
+
+# Split the corpus into individual sentences
+# re.split() separates text wherever '.', '!' or '?' occurs
+# Lowercase ensures consistent text processing
+sentence_texts = re.split(r'[.!?]+', corpus.lower())
+
+# Convert every sentence into a sequence of word indexes
+sentence_sequences = tokenizer.texts_to_sequences(sentence_texts)
+
+# Create an empty list to store context words
+contexts = []
+
+# Create an empty list to store target words
+targets = []
+
+# Generate context-target pairs sentence by sentence
+for sentence in sentence_sequences:
+
+    # Loop through words while keeping two words on both sides
+    # as context for the target word
+    for i in range(context_size, len(sentence) - context_size):
+
+        # Select two words before the target word
+        # and two words after the target word
+        context = (
+            sentence[i - context_size:i]
+            + sentence[i + 1:i + context_size + 1]
+        )
+
+        # Select the current middle word as the target
+        target = sentence[i]
+
+        # Store the context words
+        contexts.append(context)
+
+        # Store the corresponding target word
+        targets.append(target)
+
+# Convert context list into a NumPy array
+X = np.array(contexts)
+
+# Convert target list into a NumPy array
+Y = np.array(targets)
+
+# Display successful training data generation message
+print("Training Data Generated Successfully!")
+
+# Display input context array dimensions
+print("\nInput Shape:", X.shape)
+
+# Display output target array dimensions
+print("Output Shape:", Y.shape)
+
+# Display heading for first five training examples
+print("\nFirst Five Training Examples:")
+
+# Loop through the first five training examples
+for i in range(min(5, len(X))):
+
+    # Convert context word indexes back into actual words
+    context_words = [
+        index_to_word[index] for index in X[i]
+    ]
+
+    # Convert target word index back into actual word
+    target_word = index_to_word[Y[i]]
+
+    # Display context words and corresponding target word
+    print("Context:", context_words, "Target:", target_word)
+
+
+# ============================================================
+# CELL 6: DEFINE CBOW MODEL ARCHITECTURE
+# ============================================================
+
+# PURPOSE:
+# Build the CBOW neural network architecture.
+#
+# Input: Four context words
+# Embedding: Converts words into dense vectors
+# GlobalAveragePooling1D: Averages context embeddings
+# Dense layers: Learn word relationships
+# Output: Predicts probability of each vocabulary word
+
+# Define embedding vector size
+# Each word will be represented using a vector of 10 values
+embedding_size = 10
+
+# Create CBOW model using Sequential API
+model = Sequential([
+
+    # Define input shape containing four context words
+    Input(shape=(context_size * 2,)),
+
+    # Convert word indexes into embedding vectors
+    # input_dim = total vocabulary size
+    # output_dim = size of each word embedding
+    Embedding(
+        input_dim=vocab_size,
+        output_dim=embedding_size
+    ),
+
+    # Calculate average of all four context word embeddings
+    # This creates one combined context representation
+    GlobalAveragePooling1D(),
+
+    # First hidden layer containing 256 neurons
+    # ReLU introduces non-linearity
+    Dense(256, activation='relu'),
+
+    # Second hidden layer containing 512 neurons
+    Dense(512, activation='relu'),
+
+    # Output layer predicts probability of every vocabulary word
+    # Softmax converts output values into probabilities
+    Dense(vocab_size, activation='softmax')
+])
+
+# Display model architecture and trainable parameters
+model.summary()
+
+
+# ============================================================
+# CELL 7: COMPILE THE MODEL
+# ============================================================
+
+# PURPOSE:
+# Configure optimizer, loss function and evaluation metric.
+#
+# Adam: Optimizer used to update model weights.
+# Sparse Categorical Crossentropy: Loss function for
+# integer-labelled multi-class classification.
+# Accuracy: Measures correct word predictions.
+
+# Compile the CBOW model before training
+model.compile(
+
+    # Adam optimizer updates model weights
+    optimizer='adam',
+
+    # Calculate prediction error for vocabulary word classes
+    # Suitable because target words are represented by integers
+    loss='sparse_categorical_crossentropy',
+
+    # Measure percentage of correctly predicted target words
+    metrics=['accuracy']
+)
+
+# Display model compilation confirmation
+print("CBOW Model Compiled Successfully!")
+
+
+# ============================================================
+# CELL 8: TRAIN THE CBOW MODEL
+# ============================================================
+
+# PURPOSE:
+# Train the CBOW model using generated context-target pairs.
+#
+# The model learns to predict the target word
+# from its surrounding context words.
+#
+# Epochs = 80 means the model processes training data 80 times.
+# Batch size = 32 means 32 training examples are processed
+# in each batch.
+
+# Train the CBOW model and store training history
+history = model.fit(
+
+    # Provide context word indexes as model input
+    X,
+
+    # Provide target word indexes as expected output
+    Y,
+
+    # Train the model for 80 epochs
+    epochs=80,
+
+    # Process 32 context-target pairs in each batch
+    batch_size=32,
+
+    # verbose=1 displays training progress
+    verbose=1
+)
+
+# Display training completion message
+print("CBOW Model Training Completed!")
+
+
+# ============================================================
+# CELL 9: PLOT TRAINING LOSS
+# ============================================================
+
+# PURPOSE:
+# Visualize how training loss changes across epochs.
+#
+# Lower loss generally indicates that the model's
+# prediction error is decreasing.
+
+# Create a figure with width 8 and height 5
+plt.figure(figsize=(8, 5))
+
+# Plot training loss recorded during every epoch
+plt.plot(history.history['loss'])
+
+# Set graph title
+plt.title("CBOW Model Training Loss")
+
+# Set x-axis label
+plt.xlabel("Epochs")
+
+# Set y-axis label
+plt.ylabel("Loss")
+
+# Display grid lines in the graph
+plt.grid(True)
+
+# Display training loss graph
+plt.show()
+
+
+# ============================================================
+# CELL 10: PLOT TRAINING ACCURACY
+# ============================================================
+
+# PURPOSE:
+# Visualize training accuracy across all epochs.
+#
+# Accuracy represents the percentage of correctly
+# predicted target words during training.
+
+# Create a figure with width 8 and height 5
+plt.figure(figsize=(8, 5))
+
+# Plot training accuracy recorded during every epoch
+plt.plot(history.history['accuracy'])
+
+# Set graph title
+plt.title("CBOW Model Training Accuracy")
+
+# Set x-axis label
+plt.xlabel("Epochs")
+
+# Set y-axis label
+plt.ylabel("Accuracy")
+
+# Display grid lines in the graph
+plt.grid(True)
+
+# Display training accuracy graph
+plt.show()
+
+
+# ============================================================
+# CELL 11: TEST THE TRAINED CBOW MODEL
+# ============================================================
+
+# PURPOSE:
+# Test the trained CBOW model using sample context words.
+#
+# Each test phrase contains:
+# 2 context words before the missing word
+# 2 context words after the missing word.
+#
+# The model predicts the missing target word.
+
+# Define context phrases and their expected target words
+test_contexts = [
+
+    # Context words: deep, learning, a, part
+    # Expected target word: is
+    ("deep learning a part", "is"),
+
+    # Context words: learning, is, part, of
+    # Expected target word: a
+    ("learning is part of", "a"),
+
+    # Context words: is, a, of, machine
+    # Expected target word: part
+    ("is a of machine", "part"),
+
+    # Context words: it, uses, networks, to
+    # Expected target word: neural
+    ("it uses networks to", "neural"),
+
+    # Context words: useful, in, recognition, natural
+    # Expected target word: image
+    ("useful in recognition natural", "image"),
+
+    # Context words: learning, has, remarkable, results
+    # Expected target word: achieved
+    ("learning has remarkable results", "achieved")
+]
+
+# Display prediction testing heading
+print("CBOW MODEL PREDICTIONS")
+
+# Display separator line
+print("-" * 60)
+
+# Loop through each context phrase and expected word
+for context_text, expected_word in test_contexts:
+
+    # Convert context phrase into lowercase words
+    words = context_text.lower().split()
+
+    # Convert each context word into its numerical index
+    context_sequence = [
+        tokenizer.word_index[word]
+        for word in words
+    ]
+
+    # Convert context sequence into a 2D NumPy array
+    # Model expects input in batch format
+    context_array = np.array([context_sequence])
+
+    # Predict probability of every vocabulary word
+    prediction = model.predict(context_array, verbose=0)
+
+    # Find index of the word with the highest probability
+    predicted_index = np.argmax(prediction, axis=1)[0]
+
+    # Convert predicted index back into the actual word
+    # Return "Unknown" if the index is not found
+    predicted_word = tokenizer.index_word.get(
+        predicted_index, "Unknown"
+    )
+
+    # Compare predicted word with expected word
+    # Display CORRECT if both words match, otherwise MISMATCH
+    status = "CORRECT" if predicted_word == expected_word else "MISMATCH"
+
+    # Display context words
+    print("\nContext:", context_text)
+
+    # Display expected target word
+    print("Expected:", expected_word)
+
+    # Display model predicted word
+    print("Predicted:", predicted_word)
+
+    # Display prediction status
+    print("Status:", status)
+
+# Display prediction testing completion message
+print("\nPrediction Testing Completed!")
+
+
+# ============================================================
+# CELL 12: FINAL RESULT
+# ============================================================
+
+# Display successful completion message
+print("CBOW Implementation Completed Successfully!")
+

@@ -1,0 +1,783 @@
+https://chatgpt.com/c/6af7e751-eef4-83ee-89d6-38fa08116e1b
+
+Desktop => new folder Dl_lab => terminal => py -3.11 -m notebook /  python -m notebook  / python3 -m notebook
+python3 -m pip install notebook
+cd ~/Desktop/DL_lab
+python3 -m notebook
+
+1. Check installed Python versions
+py --list
+
+
+Tumhare system mein:
+- Python 3.15
+- Python 3.12
+- Python 3.11
+2. Update pip for Python 3.11
+py -3.11 -m pip install --upgrade pip
+
+
+3. Install Jupyter and common libraries
+py -3.11 -m pip install notebook ipykernel numpy==1.23.5 scipy==1.10.1 pandas matplotlib seaborn scikit-learn pillow h5py openpyxl
+
+
+4. Install TensorFlow and Keras
+py -3.11 -m pip install tensorflow==2.15.1 keras==2.15.0
+
+
+5. Install Theano-PyMC
+py -3.11 -m pip install Theano-PyMC==1.1.2
+
+
+6. Install PyTorch
+py -3.11 -m pip install torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cpu
+
+
+7. Register Jupyter kernel
+py -3.11 -m ipykernel install --user --name python311 --display-name "Python 3.11 - All DL Labs"
+
+
+8. Verify all packages
+Theano ke BLAS compatibility workaround ke saath:
+py -3.11 -c "import numpy.distutils.__config__ as c; c.blas_opt_info={}; import tensorflow as tf; import keras; import torch; import theano; import numpy; import pandas; import sklearn; import scipy; import matplotlib; import seaborn; import PIL; print('TensorFlow:',tf.__version__); print('Keras:',keras.__version__); print('PyTorch:',torch.__version__); print('Theano:',theano.__version__); print('NumPy:',numpy.__version__); print('ALL IMPORTS SUCCESSFUL')"
+
+
+9. Launch Jupyter Notebook
+Pehle apne lab folder mein jao:
+cd "C:\Users\GayatriMahajan\Documents\Gayatri\BE SPPU\SEM 7\DL\labs"
+
+
+Then:
+py -3.11 -m notebook
+
+validation import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+import numpy.distutils.__config__ as numpy_config
+numpy_config.blas_opt_info = {}
+
+import tensorflow as tf
+import keras
+import torch
+import theano
+import theano.tensor as T
+
+import numpy as np
+import pandas as pd
+import scipy
+import sklearn
+import matplotlib.pyplot as plt
+import seaborn as sns
+from PIL import Image
+
+print("All libraries imported successfully!")
+
+# ============================================================
+# ASSIGNMENT 2
+# IMPLEMENTING FEEDFORWARD NEURAL NETWORK USING KERAS
+# AND TENSORFLOW
+# ============================================================
+
+# AIM:
+# To implement a Feedforward Neural Network using Keras
+# and TensorFlow on the MNIST handwritten digit dataset.
+# Train the model using SGD optimizer, evaluate the network
+# and plot training loss and accuracy.
+
+
+# ============================================================
+# CELL 1: INSTALL REQUIRED LIBRARIES
+# ============================================================
+# PURPOSE:
+# Install TensorFlow and Matplotlib.
+# TensorFlow is used to build and train the neural network.
+# Matplotlib is used to display images and graphs.
+
+%pip install tensorflow matplotlib
+
+
+# ============================================================
+# CELL 2: IMPORT REQUIRED PACKAGES
+# ============================================================
+# PURPOSE:
+# Import all required libraries for implementation.
+
+import tensorflow as tf
+from tensorflow import keras
+import matplotlib.pyplot as plt
+import numpy as np
+import random
+
+print("TensorFlow Version:", tf.__version__)
+
+
+# ============================================================
+# CELL 3: LOAD MNIST DATASET
+# ============================================================
+# PURPOSE:
+# Load training and testing data from MNIST dataset.
+#
+# MNIST contains handwritten digit images from 0 to 9.
+# Training data: 60,000 images
+# Testing data: 10,000 images
+# Each image has dimensions 28 x 28 pixels.
+
+mnist = tf.keras.datasets.mnist
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Display dataset dimensions
+print("Training Images:", x_train.shape)
+print("Training Labels:", y_train.shape)
+
+print("Testing Images:", x_test.shape)
+print("Testing Labels:", y_test.shape)
+
+
+# ============================================================
+# CELL 4: DISPLAY SAMPLE IMAGE
+# ============================================================
+# PURPOSE:
+# Display one image from the training dataset
+# to understand the MNIST handwritten digit data.
+
+plt.imshow(x_train[0], cmap='gray')
+plt.title("Sample MNIST Training Image")
+plt.axis('off')
+plt.show()
+
+# Display corresponding digit label
+print("Actual Digit:", y_train[0])
+
+
+# ============================================================
+# CELL 5: DATA PREPROCESSING / NORMALIZATION
+# ============================================================
+# PURPOSE:
+# Normalize pixel values of images.
+#
+# Original pixel values range from 0 to 255.
+# Dividing by 255 converts values into the range 0 to 1.
+#
+# Normalization helps the neural network train efficiently.
+
+x_train = x_train.astype('float32') / 255.0
+x_test = x_test.astype('float32') / 255.0
+
+# Verify normalized pixel values
+print("Minimum Pixel Value:", x_train.min())
+print("Maximum Pixel Value:", x_train.max())
+
+
+# ============================================================
+# CELL 6: DEFINE FEEDFORWARD NEURAL NETWORK ARCHITECTURE
+# ============================================================
+# PURPOSE:
+# Create a Feedforward Neural Network using Keras Sequential API.
+#
+# Layer 1: Input layer accepts 28 x 28 images.
+# Layer 2: Flatten converts 28 x 28 image into 784 values.
+# Layer 3: Dense layer contains 128 neurons with ReLU activation.
+# Layer 4: Output layer contains 10 neurons with Softmax.
+#
+# 10 output neurons represent digits from 0 to 9.
+
+model = keras.Sequential([
+    
+    # Define input image dimensions
+    keras.layers.Input(shape=(28, 28)),
+    
+    # Convert 2D image into 1D array
+    keras.layers.Flatten(),
+    
+    # Hidden layer with 128 neurons and ReLU activation
+    keras.layers.Dense(128, activation='relu'),
+    
+    # Output layer with 10 neurons for digit classification
+    keras.layers.Dense(10, activation='softmax')
+    
+])
+
+# Display model architecture and parameters
+model.summary()
+
+
+# ============================================================
+# CELL 7: COMPILE THE MODEL
+# ============================================================
+# PURPOSE:
+# Configure the model before training.
+#
+# Optimizer: SGD (Stochastic Gradient Descent)
+# Loss: Sparse Categorical Crossentropy
+# Metric: Accuracy
+#
+# SGD updates model weights to minimize the loss.
+# Sparse categorical crossentropy is suitable for
+# multi-class classification with integer labels.
+
+model.compile(
+    optimizer='sgd',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+
+# ============================================================
+# CELL 8: TRAIN THE MODEL
+# ============================================================
+# PURPOSE:
+# Train the neural network using training data.
+#
+# Epochs = 20 means the model passes through the training
+# dataset 20 times.
+#
+# validation_split = 0.1 reserves 10% of training data
+# for validation during training.
+#
+# The test dataset is kept separate for final evaluation.
+
+history = model.fit(
+    x_train,
+    y_train,
+    validation_split=0.1,
+    epochs=20,
+    batch_size=32
+)
+
+
+# ============================================================
+# CELL 9: EVALUATE THE MODEL
+# ============================================================
+# PURPOSE:
+# Evaluate the trained neural network using test data.
+#
+# Loss indicates prediction error.
+# Accuracy indicates the percentage of correct predictions.
+
+test_loss, test_acc = model.evaluate(x_test, y_test)
+
+print("\nTest Results")
+
+print("Loss = %.3f" % test_loss)
+
+print("Accuracy = %.3f" % test_acc)
+
+
+# ============================================================
+# CELL 10: MAKE PREDICTIONS
+# ============================================================
+# PURPOSE:
+# Predict handwritten digits from the testing dataset.
+#
+# model.predict() generates probability values for
+# all 10 possible digit classes.
+#
+# argmax() selects the class having the highest probability.
+
+predicted_value = model.predict(x_test, verbose=0)
+
+# Select a random image from the testing dataset
+n = random.randint(0, len(x_test) - 1)
+
+# Find predicted digit
+predicted_digit = np.argmax(predicted_value[n])
+
+# Display selected test image
+plt.imshow(x_test[n], cmap='gray')
+plt.title("MNIST Test Image")
+plt.axis('off')
+plt.show()
+
+# Display actual and predicted digit
+print("Actual Digit:", y_test[n])
+print("Predicted Digit:", predicted_digit)
+
+
+# ============================================================
+# CELL 11: PLOT TRAINING AND VALIDATION ACCURACY
+# ============================================================
+# PURPOSE:
+# Plot training accuracy and validation accuracy
+# across all training epochs.
+#
+# Accuracy indicates how correctly the model classifies digits.
+
+plt.plot(history.history['accuracy'])
+
+plt.plot(history.history['val_accuracy'])
+
+plt.title('Model Accuracy')
+
+plt.ylabel('Accuracy')
+
+plt.xlabel('Epoch')
+
+plt.legend(['Training Accuracy', 'Validation Accuracy'],
+           loc='lower right')
+
+plt.show()
+
+
+# ============================================================
+# CELL 12: PLOT TRAINING AND VALIDATION LOSS
+# ============================================================
+# PURPOSE:
+# Plot training loss and validation loss
+# across all training epochs.
+#
+# Loss measures the error between actual and predicted values.
+# Lower loss generally indicates better model performance.
+
+plt.plot(history.history['loss'])
+
+plt.plot(history.history['val_loss'])
+
+plt.title('Model Loss')
+
+plt.ylabel('Loss')
+
+plt.xlabel('Epoch')
+
+plt.legend(['Training Loss', 'Validation Loss'],
+           loc='upper right')
+
+plt.show()
+
+
+# ============================================================
+# CELL 13: DISPLAY SAMPLE TRAINING DATA
+# ============================================================
+# PURPOSE:
+# Display a sample training image and its corresponding label.
+
+plt.imshow(x_train[0], cmap='gray')
+
+plt.title("Training Image")
+
+plt.axis('off')
+
+plt.show()
+
+print("Actual Training Label:", y_train[0])
+
+
+# ============================================================
+# CONCLUSION
+# ============================================================
+# Thus, we successfully implemented a Feedforward Neural
+# Network using Keras and TensorFlow on the MNIST dataset.
+# The model was trained using the SGD optimizer and evaluated
+# using test data. Training and validation accuracy and loss
+# graphs were plotted to analyze model performance.
+
+
+# ============================================================
+# ASSIGNMENT 2
+# IMPLEMENTING FEEDFORWARD NEURAL NETWORK USING KERAS
+# AND TENSORFLOW
+# ============================================================
+
+# AIM:
+# To implement a Feedforward Neural Network using Keras
+# and TensorFlow on the MNIST handwritten digit dataset.
+# Train the model using SGD optimizer, evaluate the network
+# and plot training loss and accuracy.
+
+
+# ============================================================
+# CELL 1: INSTALL REQUIRED LIBRARIES
+# ============================================================
+
+# PURPOSE:
+# Install TensorFlow and Matplotlib.
+# TensorFlow is used to build and train the neural network.
+# Matplotlib is used to display images and graphs.
+
+# Install packages only if they are not already installed
+# %pip installs packages into the current Jupyter environment
+
+# %pip install tensorflow matplotlib
+
+
+# ============================================================
+# CELL 2: IMPORT REQUIRED PACKAGES
+# ============================================================
+
+# PURPOSE:
+# Import all required libraries for implementation.
+
+# Import TensorFlow deep learning framework
+import tensorflow as tf
+
+# Import Keras API from TensorFlow
+from tensorflow import keras
+
+# Import Matplotlib for displaying images and graphs
+import matplotlib.pyplot as plt
+
+# Import NumPy for numerical and array operations
+import numpy as np
+
+# Import random module to select a random test image
+import random
+
+# Display the installed TensorFlow version
+print("TensorFlow Version:", tf.__version__)
+
+
+# ============================================================
+# CELL 3: LOAD MNIST DATASET
+# ============================================================
+
+# PURPOSE:
+# Load training and testing data from MNIST dataset.
+#
+# MNIST contains handwritten digit images from 0 to 9.
+# Training data: 60,000 images
+# Testing data: 10,000 images
+# Each image has dimensions 28 x 28 pixels.
+
+# Access the MNIST dataset available in TensorFlow
+mnist = tf.keras.datasets.mnist
+
+# Load the dataset and divide it into training and testing data
+# x_train = training images
+# y_train = training labels
+# x_test = testing images
+# y_test = testing labels
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Display the dimensions of training images
+print("Training Images:", x_train.shape)
+
+# Display the dimensions of training labels
+print("Training Labels:", y_train.shape)
+
+# Display the dimensions of testing images
+print("Testing Images:", x_test.shape)
+
+# Display the dimensions of testing labels
+print("Testing Labels:", y_test.shape)
+
+
+# ============================================================
+# CELL 4: DISPLAY SAMPLE IMAGE
+# ============================================================
+
+# PURPOSE:
+# Display one image from the training dataset
+# to understand the MNIST handwritten digit data.
+
+# Display the first training image in grayscale
+plt.imshow(x_train[0], cmap='gray')
+
+# Set the title of the displayed image
+plt.title("Sample MNIST Training Image")
+
+# Hide x-axis and y-axis values
+plt.axis('off')
+
+# Display the image
+plt.show()
+
+# Display the actual digit label of the selected image
+print("Actual Digit:", y_train[0])
+
+
+# ============================================================
+# CELL 5: DATA PREPROCESSING / NORMALIZATION
+# ============================================================
+
+# PURPOSE:
+# Normalize pixel values of images.
+#
+# Original pixel values range from 0 to 255.
+# Dividing by 255 converts values into the range 0 to 1.
+# Normalization helps the neural network train efficiently.
+
+# Convert training image values into float32 format
+# Divide pixel values by 255 to normalize them between 0 and 1
+x_train = x_train.astype('float32') / 255.0
+
+# Convert testing image values into float32 format
+# Divide pixel values by 255 to normalize them between 0 and 1
+x_test = x_test.astype('float32') / 255.0
+
+# Display the minimum normalized pixel value
+print("Minimum Pixel Value:", x_train.min())
+
+# Display the maximum normalized pixel value
+print("Maximum Pixel Value:", x_train.max())
+
+
+# ============================================================
+# CELL 6: DEFINE FEEDFORWARD NEURAL NETWORK ARCHITECTURE
+# ============================================================
+
+# PURPOSE:
+# Create a Feedforward Neural Network using Keras Sequential API.
+#
+# Layer 1: Input layer accepts 28 x 28 images.
+# Layer 2: Flatten converts 28 x 28 image into 784 values.
+# Layer 3: Dense layer contains 128 neurons with ReLU activation.
+# Layer 4: Output layer contains 10 neurons with Softmax.
+#
+# 10 output neurons represent digits from 0 to 9.
+
+# Create a Sequential model
+# Sequential means layers are arranged one after another
+model = keras.Sequential([
+
+    # Define input image dimensions as 28 x 28 pixels
+    keras.layers.Input(shape=(28, 28)),
+
+    # Convert 2D image into a 1D array of 784 values
+    keras.layers.Flatten(),
+
+    # Create hidden layer with 128 neurons
+    # ReLU activation introduces non-linearity
+    keras.layers.Dense(128, activation='relu'),
+
+    # Create output layer with 10 neurons
+    # Softmax gives probability for each digit class from 0 to 9
+    keras.layers.Dense(10, activation='softmax')
+
+])
+
+# Display model architecture, output shapes and parameters
+model.summary()
+
+
+# ============================================================
+# CELL 7: COMPILE THE MODEL
+# ============================================================
+
+# PURPOSE:
+# Configure the model before training.
+#
+# Optimizer: SGD (Stochastic Gradient Descent)
+# Loss: Sparse Categorical Crossentropy
+# Metric: Accuracy
+#
+# SGD updates model weights to minimize the loss.
+# Sparse categorical crossentropy is suitable for
+# multi-class classification with integer labels.
+
+# Compile the neural network with optimizer, loss and metrics
+model.compile(
+
+    # Use Stochastic Gradient Descent to update model weights
+    optimizer='sgd',
+
+    # Calculate prediction error for multiple classes
+    # Suitable when labels are integer values from 0 to 9
+    loss='sparse_categorical_crossentropy',
+
+    # Measure the percentage of correctly classified images
+    metrics=['accuracy']
+)
+
+
+# ============================================================
+# CELL 8: TRAIN THE MODEL
+# ============================================================
+
+# PURPOSE:
+# Train the neural network using training data.
+#
+# Epochs = 20 means the model passes through the training
+# dataset 20 times.
+#
+# validation_split = 0.1 reserves 10% of training data
+# for validation during training.
+#
+# The test dataset is kept separate for final evaluation.
+
+# Train the model and store training history
+history = model.fit(
+
+    # Provide training images as input
+    x_train,
+
+    # Provide actual digit labels for training
+    y_train,
+
+    # Use 10% of training data for validation
+    validation_split=0.1,
+
+    # Train the model for 20 complete epochs
+    epochs=20,
+
+    # Process 32 images in each batch
+    batch_size=32
+)
+
+
+# ============================================================
+# CELL 9: EVALUATE THE MODEL
+# ============================================================
+
+# PURPOSE:
+# Evaluate the trained neural network using test data.
+#
+# Loss indicates prediction error.
+# Accuracy indicates the percentage of correct predictions.
+
+# Evaluate the trained model using testing images and labels
+# Store the test loss and test accuracy
+test_loss, test_acc = model.evaluate(x_test, y_test)
+
+# Display test results heading
+print("\nTest Results")
+
+# Display test loss up to 3 decimal places
+print("Loss = %.3f" % test_loss)
+
+# Display test accuracy up to 3 decimal places
+print("Accuracy = %.3f" % test_acc)
+
+
+# ============================================================
+# CELL 10: MAKE PREDICTIONS
+# ============================================================
+
+# PURPOSE:
+# Predict handwritten digits from the testing dataset.
+#
+# model.predict() generates probability values for
+# all 10 possible digit classes.
+#
+# argmax() selects the class having the highest probability.
+
+# Generate prediction probabilities for all testing images
+predicted_value = model.predict(x_test, verbose=0)
+
+# Select a random image index from the testing dataset
+n = random.randint(0, len(x_test) - 1)
+
+# Find the digit class having the highest predicted probability
+predicted_digit = np.argmax(predicted_value[n])
+
+# Display the selected testing image in grayscale
+plt.imshow(x_test[n], cmap='gray')
+
+# Set image title
+plt.title("MNIST Test Image")
+
+# Hide x-axis and y-axis values
+plt.axis('off')
+
+# Display the selected image
+plt.show()
+
+# Display the actual digit from the testing dataset
+print("Actual Digit:", y_test[n])
+
+# Display the digit predicted by the neural network
+print("Predicted Digit:", predicted_digit)
+
+
+# ============================================================
+# CELL 11: PLOT TRAINING AND VALIDATION ACCURACY
+# ============================================================
+
+# PURPOSE:
+# Plot training accuracy and validation accuracy
+# across all training epochs.
+#
+# Accuracy indicates how correctly the model classifies digits.
+
+# Plot accuracy achieved on training data for each epoch
+plt.plot(history.history['accuracy'])
+
+# Plot accuracy achieved on validation data for each epoch
+plt.plot(history.history['val_accuracy'])
+
+# Set graph title
+plt.title('Model Accuracy')
+
+# Set y-axis label
+plt.ylabel('Accuracy')
+
+# Set x-axis label
+plt.xlabel('Epoch')
+
+# Add legend to identify both accuracy curves
+plt.legend(['Training Accuracy', 'Validation Accuracy'],
+           loc='lower right')
+
+# Display the accuracy graph
+plt.show()
+
+
+# ============================================================
+# CELL 12: PLOT TRAINING AND VALIDATION LOSS
+# ============================================================
+
+# PURPOSE:
+# Plot training loss and validation loss
+# across all training epochs.
+#
+# Loss measures the error between actual and predicted values.
+# Lower loss generally indicates better model performance.
+
+# Plot loss on training data for each epoch
+plt.plot(history.history['loss'])
+
+# Plot loss on validation data for each epoch
+plt.plot(history.history['val_loss'])
+
+# Set graph title
+plt.title('Model Loss')
+
+# Set y-axis label
+plt.ylabel('Loss')
+
+# Set x-axis label
+plt.xlabel('Epoch')
+
+# Add legend to identify both loss curves
+plt.legend(['Training Loss', 'Validation Loss'],
+           loc='upper right')
+
+# Display the loss graph
+plt.show()
+
+
+# ============================================================
+# CELL 13: DISPLAY SAMPLE TRAINING DATA
+# ============================================================
+
+# PURPOSE:
+# Display a sample training image and its corresponding label.
+
+# Display the first image from the training dataset
+plt.imshow(x_train[0], cmap='gray')
+
+# Set image title
+plt.title("Training Image")
+
+# Hide x-axis and y-axis values
+plt.axis('off')
+
+# Display the image
+plt.show()
+
+# Display the actual label of the training image
+print("Actual Training Label:", y_train[0])
+
+
+# ============================================================
+# CONCLUSION
+# ============================================================
+
+# Thus, we successfully implemented a Feedforward Neural
+# Network using Keras and TensorFlow on the MNIST dataset.
+
+# The model was trained using the SGD optimizer and evaluated
+# using test data.
+
+# Training and validation accuracy and loss graphs were plotted
+# to analyze model performance.
+
