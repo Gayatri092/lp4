@@ -1,0 +1,200 @@
+1] 
+import tensorflow as tf
+
+print("TensorFlow:", tf.__version__)
+
+import torch
+print("PyTorch:", torch.__version__)
+
+import keras
+print("Keras:", keras.__version__)
+
+=======================================
+2]
+import tensorflow as tf
+from tensorflow import keras
+
+(x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+
+print(x_train.shape)
+print(x_test.shape)
+
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+model = keras.Sequential([
+    keras.Input(shape=(28, 28)),
+    keras.layers.Flatten(),
+    keras.layers.Dense(128, activation='relu'),
+    keras.layers.Dense(10, activation='softmax')
+])
+model.compile(
+    optimizer='sgd',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+model.fit(x_train, y_train, epochs=5)
+loss, accuracy = model.evaluate(x_test, y_test)
+
+print("Test Accuracy:", accuracy)
+import matplotlib.pyplot as plt
+
+plt.plot(history.history['accuracy'])
+plt.title('Training Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.show()
+
+plt.plot(history.history['loss'])
+plt.title('Training Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.show()
+
+=====================================================
+3]
+import tensorflow as tf
+from tensorflow import keras
+(x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+model = keras.Sequential([
+    keras.Input(shape=(32, 32, 3)),
+    keras.layers.Conv2D(32, (3,3), activation='relu'),
+    keras.layers.MaxPooling2D((2,2)),
+    keras.layers.Flatten(),
+    keras.layers.Dense(64, activation='relu'),
+    keras.layers.Dense(10, activation='softmax')
+])
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+history = model.fit(
+    x_train, y_train,
+    epochs=5,
+    validation_split=0.1
+)
+loss, accuracy = model.evaluate(x_test, y_test)
+
+print("Test Accuracy:", accuracy)
+===========================================================
+4]
+import tensorflow as tf
+from tensorflow import keras
+import numpy as np
+(x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+x_train = x_train[y_train == 0]
+x_test_normal = x_test[y_test == 0]
+x_test_anomaly = x_test[y_test != 0]
+model = keras.Sequential([
+    keras.layers.Flatten(input_shape=(28, 28)),
+    keras.layers.Dense(64, activation='relu'),
+    keras.layers.Dense(32, activation='relu'),
+    keras.layers.Dense(64, activation='relu'),
+    keras.layers.Dense(784, activation='sigmoid'),
+    keras.layers.Reshape((28, 28))
+])
+model.compile(
+    optimizer='adam',
+    loss='mse'
+)
+model.fit(
+    x_train, x_train,
+    epochs=5,
+    batch_size=128
+)
+normal = model.predict(x_test_normal[:5])
+anomaly = model.predict(x_test_anomaly[:5])
+
+normal_error = np.mean((x_test_normal[:5] - normal)**2)
+anomaly_error = np.mean((x_test_anomaly[:5] - anomaly)**2)
+
+print("Normal Error:", normal_error)
+print("Anomaly Error:", anomaly_error)
+============================================================
+5]
+import numpy as np
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding, Lambda, Dense
+
+text = "I love deep learning and artificial intelligence"
+
+words = text.lower().split()
+vocab = sorted(set(words))
+
+word_to_id = {w:i for i,w in enumerate(vocab)}
+id_to_word = {i:w for w,i in word_to_id.items()}
+
+print(word_to_id)
+X, Y = [], []
+
+for i in range(1, len(words)-1):
+    context = [word_to_id[words[i-1]],
+               word_to_id[words[i+1]]]
+
+    target = word_to_id[words[i]]
+
+    X.append(context)
+    Y.append(target)
+
+X = np.array(X)
+Y = np.array(Y)
+model = Sequential([
+    Embedding(len(vocab), 10),
+    Lambda(lambda x: tf.reduce_mean(x, axis=1)),
+    Dense(len(vocab), activation='softmax')
+])
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+model.fit(X, Y, epochs=100, verbose=0)
+prediction = model.predict(X[:1], verbose=0)
+
+word_id = np.argmax(prediction)
+
+print("Predicted word:", id_to_word[word_id])
+========================================================
+6]
+
+import tensorflow as tf
+from tensorflow import keras
+(x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
+
+x_train = tf.image.resize(x_train[:5000], (96, 96))
+x_test = tf.image.resize(x_test[:1000], (96, 96))
+
+y_train = y_train[:5000]
+y_test = y_test[:1000]
+base_model = keras.applications.MobileNetV2(
+    weights='imagenet',
+    include_top=False,
+    input_shape=(96, 96, 3)
+)
+#freeze lower layers
+base_model.trainable = False
+#add custom classifier
+model = keras.Sequential([
+    base_model,
+    keras.layers.GlobalAveragePooling2D(),
+    keras.layers.Dense(10, activation='softmax')
+])
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+model.fit(
+    x_train, y_train,
+    epochs=3,
+    batch_size=32
+)
+loss, accuracy = model.evaluate(x_test, y_test)
+
+print("Test Accuracy:", accuracy)
